@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cmath>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -29,7 +30,7 @@ namespace ponio
         state_t state;
         value_t time_step;
 
-        current_solution( value_t tn, state_t un, value_t dt )
+        current_solution( value_t tn, state_t const& un, value_t dt )
             : time( tn )
             , state( un )
             , time_step( dt )
@@ -48,13 +49,15 @@ namespace ponio
         using const_reference   = value_type const&;
         using iterator_category = std::output_iterator_tag;
 
+        using sentinel_type = value_t;
+
         value_type sol;
         method_t meth;
         problem_t& pb;
         ponio::time_span<value_t> t_span;
         typename ponio::time_span<value_t>::iterator it_next_time;
         std::optional<value_t> dt_reference;
-        static constexpr value_t sentinel = std::numeric_limits<value_t>::max();
+        static constexpr sentinel_type sentinel = std::numeric_limits<sentinel_type>::max();
 
         // time_iterator ( problem_t & pb_, method_t meth_, state_t const& u0, ponio::time_span<value_t> && times, value_t dt )
         // : sol(times.front(), u0, dt)
@@ -70,7 +73,7 @@ namespace ponio
             , meth( meth_ )
             , pb( pb_ )
             , t_span( t_span_ )
-            , it_next_time( std::begin( t_span ) )
+            , it_next_time( std::begin( t_span ) + 1 )
             , dt_reference( std::nullopt )
         {
         }
@@ -232,6 +235,31 @@ namespace ponio
     }
 
     /**
+     * @brief equality operator that compares only current time
+     */
+    template <typename value_t, typename state_t, typename method_t, typename problem_t>
+    bool
+    operator==( time_iterator<value_t, state_t, method_t, problem_t> const& lhs,
+        typename time_iterator<value_t, state_t, method_t, problem_t>::sentinel_type const& rhs )
+    {
+        return lhs.sol.time == rhs;
+
+        //( std::abs( lhs.sol.time - rhs.sol.time ) <= std::numeric_limits<value_t>::epsilon() * std::abs( std::min( lhs.sol.time,
+        // rhs.sol.time ) ) * 1 );
+    }
+
+    /**
+     * @brief three-way comparison operator that compares only current time
+     */
+    template <typename value_t, typename state_t, typename method_t, typename problem_t>
+    auto
+    operator<=>( time_iterator<value_t, state_t, method_t, problem_t> const& lhs,
+        typename time_iterator<value_t, state_t, method_t, problem_t>::sentinel_type const& rhs )
+    {
+        return lhs.sol.time <=> rhs;
+    }
+
+    /**
      * @brief factory of `time_iterator`
      *
      * @tparam value_t   type of time and time step
@@ -267,12 +295,20 @@ namespace ponio
     struct solver_range
     {
         using iterator_type = time_iterator<value_t, state_t, method_t, problem_t>;
+        using sentinel_type = typename iterator_type::sentinel_type;
+
         iterator_type _begin;
-        iterator_type _end;
+        sentinel_type _end;
+
+        solver_range( iterator_type const& begin, sentinel_type const& end )
+            : _begin( begin )
+            , _end( end )
+        {
+        }
 
         solver_range( iterator_type const& begin, iterator_type const& end )
             : _begin( begin )
-            , _end( end )
+            , _end( end.t_span.back() )
         {
         }
 
@@ -336,7 +372,45 @@ namespace ponio
         auto meth = make_method( algo, u0 );
 
         auto begin = make_time_iterator( pb, meth, u0, t_span, dt );
-        auto end   = make_time_iterator( pb, meth, u0, { t_span.back() }, dt );
+        // auto end   = make_time_iterator( pb, meth, u0, { t_span.back() }, dt );
+        auto end = t_span.back();
+
+        return solver_range<value_t, state_t, decltype( meth ), problem_t>( begin, end );
+    }
+
+    /**
+     * @brief makes a range of solutions at each time
+     *
+     * @tparam value_t     type of time and time step
+     * @tparam state_t     type of solution \f$u^n\f$
+     * @tparam algorithm_t type of numerical method to solve problem
+     * @tparam problem_t   type of problem
+     * @tparam function_t  type of `ki_generator`
+     *
+     * @param pb           problem to solve, it could be any function of functor with a call operator with following parameter `(value_t tn,
+     * state_t const& un)`
+     * @param algo         choosen method to solve the problem `pb`
+     * @param u0           initial condition \f$u_0 = u(t=0)\f$
+     * @param t_span       container \f$[t_\text{start} , t_\text{end}]\f$ with possible intermediate time value where solver should go
+     * @param dt           time step value \f$\Delta t\f$
+     * @param ki_generator an invocable object returns an object of the same shape of \f$u^n\f$ or \f$k_i\f$
+     * @return returns the range with all solutions
+     */
+    template <typename value_t, typename state_t, typename algorithm_t, typename problem_t, typename function_t>
+        requires std::invocable<function_t>
+    auto
+    make_solver_range( problem_t& pb,
+        algorithm_t&& algo,
+        state_t const& u0,
+        ponio::time_span<value_t> const& t_span,
+        value_t dt,
+        function_t&& ki_generator )
+    {
+        auto meth = ode::make_method<state_t>( algo, ki_generator );
+
+        auto begin = make_time_iterator( pb, meth, u0, t_span, dt );
+        // auto end   = make_time_iterator( pb, meth, u0, { t_span.back() }, dt );
+        auto end = t_span.back();
 
         return solver_range<value_t, state_t, decltype( meth ), problem_t>( begin, end );
     }

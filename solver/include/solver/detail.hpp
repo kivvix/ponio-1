@@ -25,6 +25,17 @@ namespace detail
         return ( init + ... + ( mul_coeff * a[Is] * b[Is] ) );
     }
 
+    // template <typename state_t, typename value_t, typename ArrayA_t, typename ArrayB_t>
+    // constexpr auto&
+    // tpl_inner_product_impl<state_t, value_t, ArrayA_t, ArrayB_t, 0>( ArrayA_t const& a,
+    //     ArrayB_t const& b,
+    //     state_t const& init,
+    //     value_t mul_coeff,
+    //     std::index_sequence<0> )
+    // {
+    //     return init;
+    // }
+
     /**
      * @brief inner product between two array from 0 to N
      *
@@ -104,12 +115,12 @@ namespace detail
 
 #ifndef IN_DOXYGEN
     // second version with a invocable parameter and its arguments
-    template <typename Return_t, typename Function_t, typename TupleArgs_t, std::size_t... Is>
-        requires applyable<Function_t, TupleArgs_t>
+    template <typename Return_t, typename Function_t, std::size_t... Is>
+        requires std::invocable<Function_t>
     constexpr std::array<Return_t, sizeof...( Is )>
-    init_fill_array_impl( Function_t&& f, TupleArgs_t&& args, std::index_sequence<Is...> )
+    init_fill_array_impl( Function_t&& f, std::index_sequence<Is...> )
     {
-        return { { ( static_cast<void>( Is ), std::apply( f, args ) )... } };
+        return { { ( static_cast<void>( Is ), f() )... } };
     }
 
     /**
@@ -117,22 +128,19 @@ namespace detail
      *
      * @tparam N size of array to fill
      * @tparam Function_t type of invocable object
-     * @tparam Args       types of arguments to call Function_t
      *
-     * @param f invocable object that need to get a `Args...` and return the value type of output array
-     * @param args arguments of function `f`
+     * @param f invocable object that returns the value type of output array
      *
      * @code{,cpp}
-     *   const std::array<int,8> arr = detail::init_fill_array<3>([](int i){ return i*i; }, 2); // get {4,4,4}
+     *   const std::array<int,8> arr = detail::init_fill_array<3>([count=0]() mutable { return count++; }); // get {0, 1, 2}
      * @endcode
      */
-    template <std::size_t N, typename Function_t, typename... Args>
-        requires std::invocable<Function_t, Args...>
-    constexpr std::array<typename std::invoke_result<Function_t, Args...>::type, N>
-    init_fill_array( Function_t&& f, Args&&... args )
+    template <std::size_t N, typename Function_t>
+        requires std::invocable<Function_t>
+    constexpr std::array<typename std::invoke_result<Function_t>::type, N>
+    init_fill_array( Function_t&& f )
     {
-        return init_fill_array_impl<typename std::invoke_result<Function_t, Args...>::type>( std::forward<Function_t>( f ),
-            std::forward_as_tuple( args... ),
+        return init_fill_array_impl<typename std::invoke_result<Function_t>::type>( std::forward<Function_t>( f ),
             std::make_index_sequence<N>() );
     }
 #endif

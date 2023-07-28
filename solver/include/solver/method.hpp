@@ -83,24 +83,30 @@ namespace ponio
 
         method( Algorithm_t const& alg_, state_t const& shadow_of_u0 );
 
+        template <typename Function_t>
+            requires std::invocable<Function_t>
+        method( Algorithm_t const& alg_, Function_t&& ki_generator );
+
+        // method( method&& rhs );
+
         template <typename Problem_t, typename value_t>
         inline std::tuple<value_t, state_t, value_t>
-        operator()( Problem_t& f, value_t tn, state_t const& un, value_t dt );
+        operator()( Problem_t& f, value_t tn, state_t& un, value_t dt );
 
         template <std::size_t I = 0, typename Problem_t, typename value_t, typename Algo_t = Algorithm_t>
             requires std::same_as<Algo_t, Algorithm_t> && Algorithm_t::is_embedded
         typename std::enable_if<( I == Algorithm_t::N_stages + 1 ), void>::type
-        _call_stage( Problem_t& f, value_t tn, state_t const& un, value_t dt );
+        _call_stage( Problem_t& f, value_t tn, state_t& un, value_t dt );
 
         template <std::size_t I = 0, typename Problem_t, typename value_t, typename Algo_t = Algorithm_t>
             requires std::same_as<Algo_t, Algorithm_t>
         typename std::enable_if<( I == Algorithm_t::N_stages + 1 ), void>::type
-        _call_stage( Problem_t& f, value_t tn, state_t const& un, value_t dt );
+        _call_stage( Problem_t& f, value_t tn, state_t& un, value_t dt );
 
         template <std::size_t I = 0, typename Problem_t, typename value_t, typename Algo_t = Algorithm_t>
             requires std::same_as<Algo_t, Algorithm_t>
         typename std::enable_if<( I < Algorithm_t::N_stages + 1 ), void>::type
-        _call_stage( Problem_t& f, value_t tn, state_t const& un, value_t dt );
+        _call_stage( Problem_t& f, value_t tn, state_t& un, value_t dt );
 
         template <typename value_t, typename Algo_t = Algorithm_t>
         std::tuple<value_t, state_t, value_t>
@@ -126,6 +132,33 @@ namespace ponio
     }
 
     /**
+     * constructor of \ref method from its stages and a \f$u_0\f$ (only for preallocation)
+     * of temporary substeps
+     * @param algo         a `Algorithm_t` objet with predifined stages of the method
+     * @param ki_generator an invocable object returns an object of the same shape of \f$u^n\f$ or \f$k_i\f$
+     */
+    template <typename Algorithm_t, typename state_t>
+    template <typename Function_t>
+        requires std::invocable<Function_t>
+    method<Algorithm_t, state_t>::method( Algorithm_t const& alg_, Function_t&& ki_generator )
+        : alg( alg_ )
+        , kis( ::detail::init_fill_array<std::tuple_size<step_storage_t>::value>( ki_generator ) )
+    {
+    }
+
+    /**
+     * constructor of \ref method from its stages and a \f$u_0\f$ (only for preallocation)
+     * of temporary substeps
+     * @param rhs a move constructor from this value
+     */
+    // template <typename Algorithm_t, typename state_t>
+    // method<Algorithm_t, state_t>::method( method<Algorithm_t, state_t>&& rhs )
+    //     : alg( std::move(rhs.alg) )
+    //     , kis( std::move(rhs.kis) )
+    // {
+    // }
+
+    /**
      * call operator which process all stages of underlying algorithm
      * @param f  callable obect which represents the problem to solve
      * @param tn time \f$t^n\f$ last time where solution is computed
@@ -139,7 +172,7 @@ namespace ponio
     template <typename Algorithm_t, typename state_t>
     template <typename Problem_t, typename value_t>
     inline std::tuple<value_t, state_t, value_t>
-    method<Algorithm_t, state_t>::operator()( Problem_t& f, value_t tn, state_t const& un, value_t dt )
+    method<Algorithm_t, state_t>::operator()( Problem_t& f, value_t tn, state_t& un, value_t dt )
     {
         _call_stage( f, tn, un, dt );
 
@@ -150,7 +183,7 @@ namespace ponio
     template <std::size_t I, typename Problem_t, typename value_t, typename Algo_t>
         requires std::same_as<Algo_t, Algorithm_t> && Algorithm_t::is_embedded
     typename std::enable_if<( I == Algorithm_t::N_stages + 1 ), void>::type
-    method<Algorithm_t, state_t>::_call_stage( Problem_t& f, value_t tn, state_t const& un, value_t dt )
+    method<Algorithm_t, state_t>::_call_stage( Problem_t& f, value_t tn, state_t& un, value_t dt )
     {
         kis[I] = alg.stage( Stage<I>{}, f, tn, un, kis, dt );
     }
@@ -159,7 +192,7 @@ namespace ponio
     template <std::size_t I, typename Problem_t, typename value_t, typename Algo_t>
         requires std::same_as<Algo_t, Algorithm_t>
     typename std::enable_if<( I == Algorithm_t::N_stages + 1 ), void>::type
-    method<Algorithm_t, state_t>::_call_stage( Problem_t&, value_t, state_t const&, value_t )
+    method<Algorithm_t, state_t>::_call_stage( Problem_t&, value_t, state_t&, value_t )
     {
     }
 
@@ -176,7 +209,7 @@ namespace ponio
     template <std::size_t I, typename Problem_t, typename value_t, typename Algo_t>
         requires std::same_as<Algo_t, Algorithm_t>
     typename std::enable_if<( I < Algorithm_t::N_stages + 1 ), void>::type
-    method<Algorithm_t, state_t>::_call_stage( Problem_t& f, value_t tn, state_t const& un, value_t dt )
+    method<Algorithm_t, state_t>::_call_stage( Problem_t& f, value_t tn, state_t& un, value_t dt )
     {
         kis[I] = alg.stage( Stage<I>{}, f, tn, un, kis, dt );
         _call_stage<I + 1>( f, tn, un, dt );
@@ -223,11 +256,51 @@ namespace ponio
      *  @param algo         a `Algorithm_t` objet with predifined stages of the method
      *  @param shadow_of_u0 an object with the same size of computed value for allocation
      */
-    template <typename Algorithm_t, typename state_t>
+    template <typename state_t, typename Algorithm_t>
     auto
     make_method( Algorithm_t const& algo, state_t const& shadow_of_u0 )
     {
         return method<Algorithm_t, state_t>( algo, shadow_of_u0 );
+    }
+
+    /**
+     *  generic factory to build a method from an algoritm, it only reuses `method`
+     *  constructor
+     *  @param algo         a `Algorithm_t` objet with predifined stages of the method
+     *  @param ki_generator a generator for \f$k_i\f$ in substeps of algorithm
+     */
+    template <typename state_t, typename Algorithm_t, typename function_t>
+        requires std::invocable<function_t>
+    auto
+    make_method( Algorithm_t const& algo, function_t&& ki_generator )
+    {
+        return method<Algorithm_t, state_t>( algo, std::forward<function_t>( ki_generator ) );
+    }
+
+    /**
+     * @brief factory of tuple of methods from a tuple `tuple_algorithms_t`
+     *
+     * @tparam state_t            type of state variable \f$u^n\f$
+     * @tparam tuple_algorithms_t type of tuple of `Algorithm_t`
+     * @tparam Arg_t              type of argument
+     *
+     * @param algos a tuple of `Algorithm_t` objets with predifined stages
+     * @param arg   only one `state_t` value if it is from a value (which is copy in each state) or a generator
+     */
+    template <typename state_t, typename tuple_algorithms_t, typename Arg_t>
+    auto
+    make_tuple_methods( tuple_algorithms_t const& algos, Arg_t&& arg )
+    {
+        return std::apply(
+            [&]( auto const&... algos_pack )
+            {
+                auto helper_make_method = [&]( auto const& algo )
+                {
+                    return make_method( algo, std::forward<Arg_t>( arg ) );
+                };
+                return std::make_tuple( helper_make_method( algos_pack )... );
+            },
+            algos );
     }
 
     /**
@@ -241,16 +314,25 @@ namespace ponio
     auto
     make_tuple_methods( std::tuple<Algorithms_t...> const& algos, state_t const& shadow_of_u0 )
     {
-        return std::apply(
-            [&]( auto const&... args )
-            {
-                auto maker = [&]( auto const& arg )
-                {
-                    return make_method( arg, shadow_of_u0 ); // maybe should use std::bind
-                };
-                return std::make_tuple( maker( args )... );
-            },
-            algos );
+        return make_tuple_methods_impl<state_t>( algos, shadow_of_u0 );
+        // return std::apply(
+        //     [&]( auto const&... algos_pack )
+        //     {
+        //         auto helper_make_method = [&]( auto const& algo )
+        //         {
+        //             return make_method( algo, shadow_of_u0 );
+        //         };
+        //         return std::make_tuple( helper_make_method( algos_pack )... );
+        //     },
+        //     algos );
+    }
+
+    template <typename state_t, typename... Algorithms_t, typename function_t>
+        requires std::invocable<function_t>
+    auto
+    make_tuple_methods( std::tuple<Algorithms_t...> const& algos, function_t&& ki_generator )
+    {
+        return make_tuple_methods_impl<state_t>( algos, std::forward<function_t>( ki_generator ) );
     }
 
     /**
@@ -259,12 +341,21 @@ namespace ponio
      *  @param algos        a variadic `splitting::lie_tuple` of `Algorithms_t`
      *  @param shadow_of_u0 an object with the same size of computed value for allocation
      */
-    template <typename... Algorithms_t, typename state_t>
+    template <typename state_t, typename... Algorithms_t>
     auto
     make_method( splitting::lie::lie_tuple<Algorithms_t...> const& algos, state_t const& shadow_of_u0 )
     {
         auto methods = make_tuple_methods( algos.algos, shadow_of_u0 );
         return splitting::lie::make_lie_from_tuple( methods, algos.time_steps );
+    }
+
+    template <typename state_t, typename... Algorithms_t, typename function_t>
+        requires std::invocable<function_t>
+    auto
+    make_method( splitting::lie_tuple<Algorithms_t...> const& algos, function_t&& ki_generator )
+    {
+        auto methods = make_tuple_methods<state_t>( algos.algos, std::forward<function_t>( ki_generator ) );
+        return splitting::make_lie_from_tuple( methods, algos.time_steps );
     }
 
     /**
@@ -273,12 +364,21 @@ namespace ponio
      *  @param algos        a variadic `splitting::strang_tuple` of `Algorithms_t`
      *  @param shadow_of_u0 an object with the same size of computed value for allocation
      */
-    template <typename... Algorithms_t, typename state_t>
+    template <typename state_t, typename... Algorithms_t>
     auto
     make_method( splitting::strang::strang_tuple<Algorithms_t...> const& algos, state_t const& shadow_of_u0 )
     {
         auto methods = make_tuple_methods( algos.algos, shadow_of_u0 );
         return splitting::strang::make_strang_from_tuple( methods, algos.time_steps );
+    }
+
+    template <typename state_t, typename... Algorithms_t, typename function_t>
+        requires std::invocable<function_t>
+    auto
+    make_method( splitting::strang_tuple<Algorithms_t...> const& algos, function_t&& ki_generator )
+    {
+        auto methods = make_tuple_methods<state_t>( algos.algos, std::forward<function_t>( ki_generator ) );
+        return splitting::make_strang_from_tuple( methods, algos.time_steps );
     }
 
 } // namespace ponio

@@ -128,12 +128,10 @@ main( int argc, char** argv )
     using point_t             = typename box_t::point_t;
 
     // simulation parameters --------------------------------------------------
-    constexpr double Da = 2.5e-3;
     constexpr double Db = 2.5e-3;
     constexpr double Dc = 1.5e-3;
 
     constexpr double epsilon = 1e-2;
-    constexpr double mu      = 1e-5;
     constexpr double f       = 1.6;
     constexpr double q       = 2e-3;
 
@@ -144,12 +142,12 @@ main( int argc, char** argv )
 
     // multiresolution parameters
     std::size_t min_level = 2;
-    std::size_t max_level = 7;
+    std::size_t max_level = 8;
     double mr_epsilon     = 1e-3; // Threshold used by multiresolution
     double mr_regularity  = 1.;   // Regularity guess for multiresolution
 
     // output parameters
-    std::string const dirname = "belousov_zhabotinsky_2d_3eq_pirock_data";
+    std::string const dirname = "belousov_zhabotinsky_2d_2eq_pirock_data";
     fs::path path             = std::filesystem::path( dirname );
     std::string filename      = "u";
     fs::create_directories( path );
@@ -163,15 +161,14 @@ main( int argc, char** argv )
 
     // init solution ----------------------------------------------------------
     // auto u_ini = init( mesh );
-    auto u_ini = samurai::make_field<3>( "u", mesh );
+    auto u_ini = samurai::make_field<2>( "u", mesh );
 
     u_ini.fill( 0 );
     samurai::for_each_cell( mesh,
         [&]( auto& cell )
         {
-            auto& a = u_ini[cell]( 0 );
-            auto& b = u_ini[cell]( 1 );
-            auto& c = u_ini[cell]( 2 );
+            auto& b = u_ini[cell]( 0 );
+            auto& c = u_ini[cell]( 1 );
 
             double x = cell.center()[0] - 0.5;
             double y = cell.center()[1] - 0.5;
@@ -199,19 +196,17 @@ main( int argc, char** argv )
                 b = bss;
             }
             c = css + theta / ( 8. * std::numbers::pi * f );
-
-            a = ( f * c ) / ( q + b );
         } );
-    samurai::make_bc<samurai::Neumann<1>>( u_ini, 0., 0., 0. );
+    samurai::make_bc<samurai::Neumann<1>>( u_ini, 0., 0. );
 
     // define problem ---------------------------------------------------------
 
     // diffusion terme
-    auto d    = samurai::DiffCoeff<3>( { Da, Db, Dc } );
+    auto d    = samurai::DiffCoeff<2>( { Db, Dc } );
     auto diff = samurai::make_multi_diffusion_order2<decltype( u_ini )>( d );
     auto fd   = [&]( double /* t */, auto&& u )
     {
-        samurai::make_bc<samurai::Neumann<1>>( u, 0., 0., 0. );
+        samurai::make_bc<samurai::Neumann<1>>( u, 0., 0. );
         samurai::update_ghost_mr( u );
         return -diff( u );
     };
@@ -224,25 +219,22 @@ main( int argc, char** argv )
         [&]( auto const& cell, auto const& field ) -> samurai::SchemeValue<cfg>
         {
             auto u  = field[cell];
-            auto& a = u[0];
-            auto& b = u[1];
-            auto& c = u[2];
+            auto& b = u[0];
+            auto& c = u[1];
 
-            return { 1. / mu * ( -q * a - a * b + f * c ), 1. / epsilon * ( q * a - a * b + b * ( 1. - b ) ), b - c };
+            return { 1. / epsilon * ( b - b * b + f * ( q - b ) * c / ( q + b ) ), b - c };
         } );
     // or set option in command line with : -snes_fd -pc_type none
     react.set_jacobian_function(
         [&]( auto const& cell, auto const& field ) -> samurai::JacobianMatrix<cfg>
         {
             auto u  = field[cell];
-            auto& a = u[0];
-            auto& b = u[1];
-            // auto& c = u[2];
+            auto& b = u[0];
+            auto& c = u[1];
 
             return {
-                {( -q - b ) / mu,      -a / mu,                           f / mu},
-                { ( q - b ) / epsilon, 1. / epsilon * ( -a - 2 * b + 1 ), 0.    },
-                { 0.,                  1.,                                -1.   }
+                {1. / epsilon * ( -2. * b - 2. * c * f * q / ( ( b + q ) * ( b + q ) ) + 1. ), f * ( -b + q ) / ( epsilon * ( b + q ) )},
+                { 1.,                                                                          -1.                                     }
             };
         } );
     auto fr_t = [&]( double /* t */ )
@@ -251,8 +243,8 @@ main( int argc, char** argv )
     };
     auto fr = [&]( double t, auto&& u )
     {
-        samurai::make_bc<samurai::Neumann<1>>( u, 0., 0., 0. );
-        samurai::update_ghost_mr( u );
+        // samurai::make_bc<samurai::Neumann<1>>( u, 0., 0. );
+        // samurai::update_ghost_mr( u );
         return fr_t( t )( u );
     };
 
@@ -279,7 +271,7 @@ main( int argc, char** argv )
 
     // preapre MR for solution on iterator
     auto mr_adaptation = samurai::make_MRAdapt( it_sol->state );
-    samurai::make_bc<samurai::Neumann<1>>( it_sol->state, 0., 0., 0. );
+    samurai::make_bc<samurai::Neumann<1>>( it_sol->state, 0., 0. );
     mr_adaptation( mr_epsilon, mr_regularity );
     samurai::update_ghost_mr( it_sol->state );
 
@@ -288,7 +280,7 @@ main( int argc, char** argv )
 
     while ( it_sol->time < t_end )
     {
-        samurai::make_bc<samurai::Neumann<1>>( it_sol->state, 0., 0., 0. );
+        samurai::make_bc<samurai::Neumann<1>>( it_sol->state, 0., 0. );
         //  TODO: add a callback function to make this before each iteration
         for ( auto& ki : it_sol.meth.kis )
         {

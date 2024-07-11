@@ -31,70 +31,6 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-namespace samurai
-{
-    template <class Field, DirichletEnforcement dirichlet_enfcmt = Equation>
-    auto
-    make_multi_diffusion_order2( DiffCoeff<Field::size> const& K )
-    {
-        static constexpr std::size_t dim               = Field::dim;
-        static constexpr std::size_t field_size        = Field::size;
-        static constexpr std::size_t output_field_size = field_size;
-        static constexpr std::size_t stencil_size      = 2;
-
-        using cfg = FluxConfig<SchemeType::LinearHomogeneous, output_field_size, stencil_size, Field>;
-
-        FluxDefinition<cfg> K_grad;
-
-        static_for<0, dim>::apply( // for (int d=0; d<dim; d++)
-            [&]( auto integral_constant_d )
-            {
-                static constexpr std::size_t d = integral_constant_d();
-
-                K_grad[d].cons_flux_function = [K]( double h )
-                {
-                    static constexpr std::size_t left  = 0;
-                    static constexpr std::size_t right = 1;
-
-                    // Return value: 2 matrices (left, right) of size output_field_size x field_size.
-                    // In this case, of size field_size x field_size.
-                    FluxStencilCoeffs<cfg> coeffs;
-                    if constexpr ( field_size == 1 )
-                    {
-                        coeffs[left]  = -1 / h;
-                        coeffs[right] = 1 / h;
-                    }
-                    else
-                    {
-                        coeffs[left].fill( 0 );
-                        coeffs[right].fill( 0 );
-                        for ( std::size_t i = 0; i < field_size; ++i )
-                        {
-                            coeffs[left]( i, i )  = -1 / h;
-                            coeffs[right]( i, i ) = 1 / h;
-                        }
-                    }
-                    // Minus sign because we want -Laplacian
-                    if constexpr ( field_size == 1 )
-                    {
-                        coeffs[left] *= -K( 0 );
-                        coeffs[right] *= -K( 0 );
-                    }
-                    else
-                    {
-                        for ( std::size_t i = 0; i < field_size; ++i )
-                        {
-                            coeffs[left]( i, i ) *= -K( i );
-                            coeffs[right]( i, i ) *= -K( i );
-                        }
-                    }
-                    return coeffs;
-                };
-            } );
-        return make_diffusion__<cfg, dirichlet_enfcmt>( K_grad );
-    }
-}
-
 template <class field_t>
 void
 save( fs::path const& path, std::string const& filename, field_t& u, std::string const& suffix = "" )
@@ -140,13 +76,13 @@ main( int argc, char** argv )
     constexpr double left_box  = 0.;
     constexpr double right_box = 1.;
     constexpr double t_ini     = 0.;
-    constexpr double t_end     = 1.;
+    constexpr double t_end     = 2.;
 
     // multiresolution parameters
     std::size_t min_level = 2;
-    std::size_t max_level = 7;
-    double mr_epsilon     = 1e-3; // Threshold used by multiresolution
-    double mr_regularity  = 1.;   // Regularity guess for multiresolution
+    std::size_t max_level = 6;
+    double mr_epsilon     = 1e-2; // Threshold used by multiresolution
+    double mr_regularity  = 0.;   // Regularity guess for multiresolution
 
     // output parameters
     std::string const dirname = "belousov_zhabotinsky_2d_3eq_pirock_data";
@@ -228,7 +164,13 @@ main( int argc, char** argv )
             auto& b = u[1];
             auto& c = u[2];
 
-            return { 1. / mu * ( -q * a - a * b + f * c ), 1. / epsilon * ( q * a - a * b + b * ( 1. - b ) ), b - c };
+            // clang-format off
+            return {
+                1. / mu * ( -q * a - a * b + f * c ),
+                1. / epsilon * ( q * a - a * b + b * ( 1. - b ) ),
+                b - c
+            };
+            // clang-format on
         } );
     // or set option in command line with : -snes_fd -pc_type none
     react.set_jacobian_function(
@@ -251,29 +193,41 @@ main( int argc, char** argv )
     };
     auto fr = [&]( double t, auto&& u )
     {
+        u.get_bc().clear();
         samurai::make_bc<samurai::Neumann<1>>( u, 0., 0., 0. );
         samurai::update_ghost_mr( u );
         return fr_t( t )( u );
     };
 
     ponio::time_span<double> const t_span = { t_ini, t_end };
-    double dt                             = ( t_end - t_ini ) / 2000;
+    double dt                             = ( t_end - t_ini ) / 4000;
 
     auto eigmax_computer = [=]( auto&, double, auto&, double )
     {
         double dx = samurai::cell_length( max_level );
+        // return 10. * Da * 8. / ( dx * dx );
         return 4. / ( dx * dx );
     };
 
     auto pb = ponio::make_imex_operator_problem( fd, fr, fr_t );
 
     // time loop  -------------------------------------------------------------
-    auto sol_range = ponio::make_solver_range( pb,
-        ponio::runge_kutta::pirock::pirock<1>( ponio::runge_kutta::pirock::beta_0<double>(), eigmax_computer ),
-        u_ini,
-        t_span,
-        dt );
-    // auto sol_range = ponio::make_solver_range( pb, ponio::runge_kutta::pirock::pirock_b0( eigmax_computer ), u_ini, t_span, dt );
+    static constexpr bool is_embedded = false;
+
+    auto pirock_b0    = ponio::runge_kutta::pirock::pirock<1>( ponio::runge_kutta::pirock::beta_0<double>(), eigmax_computer );
+    auto pirock_a1    = ponio::runge_kutta::pirock::pirock<2>( ponio::runge_kutta::pirock::alpha_fixed<double>( 1.0 ), eigmax_computer );
+    auto pirock_b0_st = ponio::runge_kutta::pirock::pirock<1, is_embedded>( ponio::runge_kutta::pirock::beta_0<double>(),
+        eigmax_computer,
+        ponio::shampine_trick::shampine_trick<decltype( u_ini )>(),
+        1e-3 );
+    auto pirock_a1_st = ponio::runge_kutta::pirock::pirock<2, is_embedded>( ponio::runge_kutta::pirock::alpha_fixed<double>( 1.0 ),
+        eigmax_computer,
+        ponio::shampine_trick::shampine_trick<decltype( u_ini )>(),
+        1e-3 );
+    auto rock4        = ponio::runge_kutta::rock::rock4<is_embedded>( eigmax_computer );
+
+    // auto sol_range = ponio::make_solver_range( pb, rock4, u_ini, t_span, dt );
+    auto sol_range = ponio::make_solver_range( pb, pirock_b0_st, u_ini, t_span, dt );
 
     auto it_sol = sol_range.begin();
 
@@ -284,10 +238,12 @@ main( int argc, char** argv )
     samurai::update_ghost_mr( it_sol->state );
 
     std::size_t n_save = 0;
+    save( path, filename, it_sol->state, "_initial_condition" );
     save( path, filename, it_sol->state, fmt::format( "_ite_{}", n_save++ ) );
 
     while ( it_sol->time < t_end )
     {
+        it_sol->state.get_bc().clear();
         samurai::make_bc<samurai::Neumann<1>>( it_sol->state, 0., 0., 0. );
         //  TODO: add a callback function to make this before each iteration
         for ( auto& ki : it_sol.meth.kis )
@@ -297,7 +253,7 @@ main( int argc, char** argv )
         }
 
         ++it_sol;
-        std::cout << "tⁿ: " << std::setw( 8 ) << it_sol->time << " (Δt: " << it_sol->time_step << ") " << n_save << "\r";
+        std::cout << "tⁿ: " << std::setw( 8 ) << it_sol->time << " (Δt: " << it_sol->time_step << ") " << n_save << std::endl;
 
         mr_adaptation( mr_epsilon, mr_regularity );
         samurai::update_ghost_mr( it_sol->state );

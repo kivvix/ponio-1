@@ -18,6 +18,8 @@
 #include "dirk.hpp"
 #include "rock.hpp"
 
+#include <xtensor/xmath.hpp>
+
 namespace ponio::runge_kutta::pirock
 {
     namespace polynomial
@@ -161,7 +163,8 @@ namespace ponio::runge_kutta::pirock
         alpha_beta_computer_t alpha_beta_computer;
         eig_computer_t eig_computer;
         shampine_trick_caller_t shampine_trick_caller;
-        value_t tolerance;
+        value_t a_tol;
+        value_t r_tol;
 
         /**
          * @brief Construct a new pirock impl object
@@ -191,7 +194,8 @@ namespace ponio::runge_kutta::pirock
          * @param _alpha_beta_computer   alpha and beta computer object
          * @param _eig_computer          eigenvalue computer functor
          * @param _shampine_trick_caller Shampine's trick functor
-         * @param tol                    tolerance
+         * @param absolute_tol           absolute tolerance
+         * @param relative_tol           relative tolerance
          */
         template <typename _shampine_trick_caller_t_>
             requires std::same_as<_shampine_trick_caller_t_, shampine_trick_caller_t>
@@ -199,11 +203,13 @@ namespace ponio::runge_kutta::pirock
         pirock_impl( alpha_beta_computer_t&& _alpha_beta_computer,
             eig_computer_t&& _eig_computer,
             _shampine_trick_caller_t_&& _shampine_trick_caller,
-            value_t tol = default_config::tol )
+            value_t absolute_tol = default_config::tol,
+            value_t relative_tol = default_config::tol )
             : alpha_beta_computer( _alpha_beta_computer )
             , eig_computer( _eig_computer )
             , shampine_trick_caller( _shampine_trick_caller )
-            , tolerance( tol )
+            , a_tol( absolute_tol )
+            , r_tol( relative_tol )
         {
         }
 
@@ -365,8 +371,11 @@ namespace ponio::runge_kutta::pirock
 
                 f_D_u = static_cast<state_t>( pb.explicit_part( tn, u_sp3 ) - pb.explicit_part( tn, u_sp1 ) );
 
+                // std::cerr << "compute shampine trick" << std::endl;
+
                 shampine_trick_caller.template operator()<l>( gamma * dt, pb.implicit_part.f_t( tn ), u_sm2pl, f_D_u, u_tmp, shampine_element );
 
+                // std::cerr << "iteration is ok" << std::endl;
                 if constexpr ( is_embedded )
                 {
                     auto& rhs_R = U[14];
@@ -379,35 +388,58 @@ namespace ponio::runge_kutta::pirock
                     // then solve $J_R err_R = rhs_R$ (that what Shampine's trick does, it build $J_R$ and solve it)
                     shampine_trick_caller.template operator()<1>( gamma * dt, pb.implicit_part.f_t( tn ), u_sm2pl, rhs_R, u_tmp, err_R );
 
+                    u_np1 = us_s - err_D + 0.5 * dt * pb.implicit_part( tn, u_sp1 ) + 0.5 * dt * pb.implicit_part( tn, u_sp2 )
+                          + 1.0 / ( 2. - 4. * gamma ) * shampine_element;
+
                     // TODO: this couple of lines works only with samurai (because of err_D.array())
-                    auto err = std::max( std::accumulate( err_D.array().begin(),
-                                             err_D.array().end(),
-                                             static_cast<value_t>( 0. ),
-                                             []( value_t const& acc, value_t const xi )
-                                             {
-                                                 return acc + std::abs( xi );
-                                             } ),
-                        std::accumulate( err_R.array().begin(),
-                            err_R.array().end(),
-                            static_cast<value_t>( 0. ),
-                            []( value_t const& acc, value_t const xi )
-                            {
-                                return acc + std::abs( xi );
-                            } ) );
+                    // auto err = std::max( xt::maximum( xt::abs( err_D.array() ), 0. )(), xt::maximum( xt::abs( err_R.array() ), 0. )() );
+
+                    auto norm_err_D = static_cast<value_t>( 0. );
+                    auto norm_err_R = static_cast<value_t>( 0. );
+
+                    auto it_err_R = err_R.array().begin();
+                    auto it_un    = un.array().begin();
+                    auto it_u_np1 = u_np1.array().begin();
+                    for ( auto it_err_D = err_D.array().begin(); it_err_D < err_D.array().end(); ++it_err_D, ++it_err_R, ++it_un, ++it_u_np1 )
+                    {
+                        auto tmp = r_tol * std::max( std::abs( *it_un ), std::abs( *it_u_np1 ) );
+                        norm_err_D += ::detail::power<2>( std::abs( *it_err_D ) / ( a_tol + tmp ) );
+                        norm_err_R += ::detail::power<2>( std::abs( *it_err_R ) / ( a_tol + tmp ) );
+                    }
+
+                    auto err = std::max( std::sqrt( norm_err_D / err_D.size ), std::sqrt( norm_err_R / err_D.size ) );
+                    std::cout << "error : D" << std::sqrt( norm_err_D / err_D.size ) << " R:" << std::sqrt( norm_err_R / err_D.size )
+                              << " global:" << err << std::endl;
+
+                    // auto err = std::max( std::accumulate( err_D.array().begin(),
+                    //                          err_D.array().end(),
+                    //                          static_cast<value_t>( 0. ),
+                    //                          []( value_t const& acc, value_t const xi )
+                    //                          {
+                    //                              return acc + std::abs( xi );
+                    //                          } ),
+                    //                std::accumulate( err_R.array().begin(),
+                    //                    err_R.array().end(),
+                    //                    static_cast<value_t>( 0. ),
+                    //                    []( value_t const& acc, value_t const xi )
+                    //                    {
+                    //                        return acc + std::abs( xi );
+                    //                    } ) )
+                    //          / err_D.array().size();
 
                     value_t new_dt = dt;
                     if ( err > 0. )
                     {
-                        new_dt = 0.8 * std::sqrt( tolerance / err ) * dt;
+                        new_dt = 0.5 * std::sqrt( 1.0 / err ) * dt;
                     }
 
-                    if ( err > tolerance )
+                    if ( err > 1.0 )
                     {
+                        std::cout << "\033[41;1m... rejected ! ...\033[0m" << std::endl;
                         return { tn, un, new_dt };
                     }
 
-                    u_np1 = us_s - err_D + 0.5 * dt * pb.implicit_part( tn, u_sp1 ) + 0.5 * dt * pb.implicit_part( tn, u_sp2 )
-                          + 1.0 / ( 2. - 4. * gamma ) * shampine_element;
+                    std::cout << "\033[92m... accepted ! ...\033[0m" << std::endl;
                     return { tn + dt, u_np1, new_dt };
                 }
 

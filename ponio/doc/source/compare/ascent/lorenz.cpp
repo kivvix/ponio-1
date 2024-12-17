@@ -21,12 +21,12 @@ main()
     auto vec_observer = [&]( asc::state_t const& y, double const t )
     {
         sol.push_back( {
-            {t, y[0], y[1], y[2]}
+            { t, y[0], y[1], y[2] }
         } );
     };
 
     asc::state_t y0 = {
-        {1., 1., 1.}
+        { 1., 1., 1. }
     };
     double t0 = 0.;
     double tf = 20.0;

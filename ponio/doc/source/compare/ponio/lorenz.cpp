@@ -22,7 +22,7 @@ main()
     };
 
     state_t y0 = {
-        {1., 1., 1.}
+        { 1., 1., 1. }
     };
     ponio::time_span<double> t_span = { 0., 20.0 };
     double dt                       = 0.01;

@@ -86,12 +86,13 @@ main( int argc, char** argv )
 
     // multiresolution parameters
     std::size_t const min_level = 2;
-    std::size_t const max_level = 5;
+    std::size_t const max_level = 8;
     double const mr_epsilon     = 1e-3; // Threshold used by multiresolution
     double const mr_regularity  = 1.;   // Regularity guess for multiresolution
 
     // output parameters
-    std::string const dirname  = std::string( argv[0] ) + std::string( "_data" );
+    std::string const dirname = std::string( argv[0] ) + std::string( "_data" );
+
     std::filesystem::path path = std::filesystem::path( dirname );
     std::string filename       = "sol";
 
@@ -173,14 +174,14 @@ main( int argc, char** argv )
                 double x = cell.center( 0 );
                 double y = cell.center( 1 );
 
-                double x_0s = ( x < 0. ) ? x_0sm : x_0sp;
-                double sign = ( x < 0. ) ? 1.0 : -1.0;
+                double r_2_1 = ( x_s( x ) - x_0sm ) * ( x_s( x ) - x_0sm ) + ( y_s( y ) - y_0s ) * ( y_s( y ) - y_0s );
+                double r_2_2 = ( x_s( x ) - x_0sp ) * ( x_s( x ) - x_0sp ) + ( y_s( y ) - y_0s ) * ( y_s( y ) - y_0s );
 
-                double r_s2     = ( x_s( x ) - x_0s ) * ( x_s( x ) - x_0s ) + ( y_s( y ) - y_0s ) * ( y_s( y ) - y_0s ); // compute r_s^2
-                double v_thetas = Re * Sc * ( 1.0 - std::exp( -r_s2 / ( 4. * Sc * t_s( t ) ) ) ); // remove r_s from this expression
+                double v_theta_1 = -Re * Sc * ( 1.0 - std::exp( -r_2_1 / ( 4. * Sc * t_s( t ) ) ) ) / r_2_1;
+                double v_theta_2 = +Re * Sc * ( 1.0 - std::exp( -r_2_2 / ( 4. * Sc * t_s( t ) ) ) ) / r_2_2;
 
-                vel[cell][0] = ( y_s( y ) - y_0s ) * v_thetas / r_s2;        // divide by r_s^2
-                vel[cell][1] = sign * ( x_s( x ) - x_0s ) * v_thetas / r_s2; // divide by r_s^2
+                vel[cell][0] = -( x_s( x ) - x_0sm ) * v_theta_1 - ( x_s( x ) - x_0sp ) * v_theta_2;
+                vel[cell][1] = ( y_s( y ) - y_0s ) * ( v_theta_1 + v_theta_2 );
             } );
     };
     update_velocity( velocity, t_ini );
@@ -210,9 +211,9 @@ main( int argc, char** argv )
         ponio::shampine_trick::shampine_trick<field_t>() );
     auto rk3    = ponio::runge_kutta::rk_ssp_33();
 
-    auto strang = ponio::splitting::make_strang_tuple( std::make_pair( pirock, 1e-6 ), std::make_pair( rk3, 1e-8 ) );
+    auto strang = ponio::splitting::make_strang_tuple( std::make_pair( pirock, 1e-9 ), std::make_pair( rk3, 1e-8 ) );
 
-    double dt = 1e-7;
+    double dt = 5e-8;
 
     // range to iterate over solution
     auto sol_range = ponio::make_solver_range( pb, strang, c_init, { t_ini, t_end }, dt );

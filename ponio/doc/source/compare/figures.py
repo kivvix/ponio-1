@@ -1,5 +1,7 @@
 import numpy as np
 import os
+
+# import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 from scipy.integrate import solve_ivp
@@ -19,6 +21,40 @@ ode_lib = {
     "scipy": "SciPy"
 }
 
+<< << << < HEAD
+== == == =
+
+# matplotlib.pyplot version
+
+# fig = plt.figure(constrained_layout=True, figsize=(8, 8))
+# gs = fig.add_gridspec(6, 1)
+# axlist = []
+
+# ax = fig.add_subplot(gs[:, 0], projection='3d')
+# ax.set_xlim3d([-20, 20])
+# ax.set_ylim3d([-20, 20])
+# ax.set_zlim3d(bottom=0, top=50)
+
+# ax.xaxis.pane.fill = False
+# ax.yaxis.pane.fill = False
+# ax.zaxis.pane.fill = False
+# ax.xaxis.pane.set_edgecolor('w')
+# ax.yaxis.pane.set_edgecolor('w')
+# ax.zaxis.pane.set_edgecolor('w')
+
+# # for d in dirs_compare:
+# for d in ode_lib.keys():
+#     print(f"extract data from: {d}")
+#     data = np.loadtxt(os.path.join(d, "lorenz.txt"))
+#     t, x, y, z = data[:, 0], data[:, 1], data[:, 2], data[:, 3]
+#     ax.plot(x, y, z, linewidth=0.5, label=ode_lib[d])
+
+# plt.legend()
+# plt.savefig(os.path.join("lorenz.png"))
+
+
+# plotly version
+>>>>>> > 90d1a29(try plotly for output)
 colors = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
 ]

@@ -1,7 +1,11 @@
 GIT_repository = https://github.com/AnyarInc/Ascent.git
 ASCENT_include = Ascent
 
+<<<<<<< HEAD
 all: lorenz.txt transport.txt arenstorf.txt
+=======
+all: lorenz.txt transport.txt
+>>>>>>> d57023f (add an PDE example)
 
 
 %.txt: %.out

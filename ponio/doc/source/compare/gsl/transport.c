@@ -5,17 +5,12 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_odeiv2.h>
 
-<<<<<<< HEAD
 static int
 stepper_set_driver_null( void* vstate, gsl_odeiv2_driver const* d )
-=======
-int upwind(double t, const double y[], double dy[], void *params)
->>>>>>> 7bd62c7 (improve transport example)
 {
     return GSL_SUCCESS;
 }
 
-<<<<<<< HEAD
 typedef struct
 {
     double* k;
@@ -32,16 +27,6 @@ euler_alloc( size_t dim )
     {
         GSL_ERROR_NULL( "failed to allocate space for euler_state", GSL_ENOMEM );
     }
-=======
-  dy[0] = -( fmax( a, 0. ) * ( y[0] - y[n_x - 1] ) + fmin( a, 0. ) * ( y[1] - y[0] ) ) / dx;
-
-  for ( int i = 1; i < n_x - 1; ++i )
-  {
-      dy[i] = -( fmax( a, 0. ) * ( y[i] - y[i - 1] ) + fmin( a, 0. ) * ( y[i + 1] - y[i] ) ) / dx;
-  }
-
-  dy[n_x - 1] = -( fmax( a, 0. ) * ( y[n_x - 1] - y[n_x - 2] ) + fmin( a, 0. ) * ( y[0] - y[n_x - 1] ) ) / dx;
->>>>>>> 7bd62c7 (improve transport example)
 
     state->k = (double*)malloc( dim * sizeof( double ) );
 

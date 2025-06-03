@@ -34,6 +34,7 @@ and now call it with `scipy.integrate.solve_ivp` function:
 sol = solve_ivp(lorenz_system, t_span, y0, method=RK44, first_step=dt)
 ```
 
+<<<<<<< HEAD
 To solve a problem with SciPy we first write our equation as a ODE of the form:
 
 $$
@@ -69,6 +70,9 @@ After chose a method, we can solve the problem between initial time and final ti
 this function returns an object with solution at each time (and also dense output properties).
 
 For the complet example, see [`lorenz.py` source file](lorenz.py).
+=======
+For the complet example, see [`lorenz.cpp` source file](lorenz.cpp).
+>>>>>>> 326b4aa (improve READMEs in compare section)
 
 ## Transport equation
 

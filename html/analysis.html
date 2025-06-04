@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <title>ponio - presentation overview of numerical integrators for ODE</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+  <!-- KaTeX -->
+  <script src="https://unpkg.com/asciimath2tex@1.2.1/dist/asciimath2tex.umd.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
+    integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
+    integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6"
+    crossorigin="anonymous"></script>
+
+
+  <!-- highlight -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+
+  <!-- math.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.js" type="text/javascript"></script>
+
+  <!-- d3.js -->
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-contour@3"></script>
+
+  <style>
+    :root {
+      --pico-typography-spacing-vertical: 1.5rem;
+      --pico-form-element-spacing-vertical: 1rem;
+      --pico-form-element-spacing-horizontal: 1.25rem;
+    }
+
+    h1 {
+      --pico-font-family: "Ubuntu", sans-serif;
+      --pico-font-weight: 400;
+      --pico-typography-spacing-vertical: 0rem;
+    }
+
+    .is-fixed {
+      z-index: 10;
+      position: sticky;
+      top: 0;
+      height: 4rem;
+      backdrop-filter: blur(1rem);
+      background-color: var(--pico-card-background-color);
+      box-shadow: var(--pico-card-box-shadow);
+      --pico-block-spacing-vertical: 0rem;
+    }
+
+    main {
+      display: flex;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+      gap: var(--pico-spacing);
+      align-items: flex-start;
+    }
+
+    main article {
+      flex: 1 1 700px;
+      max-width: 90vw;
+    }
+
+    .transparent {
+      background-color: var(--transparent-background);
+    }
+
+    section {
+      max-width: 100%;
+    }
+
+    article header {
+      position: sticky;
+      top: 4rem;
+      z-index: 9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    article:target header {
+      background-color: #f6b93b;
+    }
+
+    article:hover header {
+      background-color: #82ccdd;
+    }
+
+    article header a {
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .summary-container {
+      max-width: 90%;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .butcher-container {
+      max-width: 90%;
+      overflow-y: scroll;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 0.75rem;
+    }
+
+    /* Butcher tableau */
+    .butcher {
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      border-spacing: 5px;
+      border-collapse: collapse;
+      --bold-border: 3px solid var(--pico-table-border-color);
+      --thin-border: 1px solid var(--pico-table-border-color);
+    }
+
+    .butcher td {
+      padding: 3px;
+      border-top: var(--thin-border);
+      border-right: var(--thin-border);
+      text-align: center;
+      vertical-align: middle;
+      min-width: 62px;
+      --border-width: 0px;
+    }
+
+    .butcher tr td:first-child {
+      border-right: var(--bold-border);
+      /* separator c and A in butcher tableau */
+    }
+
+    .butcher tr:last-child td {
+      border-top: var(--bold-border);
+      border-bottom: none !important;
+    }
+
+    .butcher tr:first-child td {
+      border-top: none !important;
+    }
+
+    .butcher tr td:last-child {
+      border-right: none !important;
+    }
+
+    .butcher.embedded tr:nth-last-child(-n+2) td {
+      border-top: var(--bold-border);
+    }
+
+    .butcher.embedded tr:last-child td {
+      border-top: var(--thin-border);
+    }
+
+    .stab-func {
+      max-width: 100%;
+      overflow-y: scroll;
+    }
+
+    figcaption {
+      max-width: 100%;
+      overflow-y: scroll;
+    }
+
+    .scheme {
+      max-width: 100%;
+      overflow-y: scroll;
+    }
+
+    .scheme li {
+      list-style: none;
+    }
+
+    .scheme li .katex-display,
+    .scheme li .katex-display>.katex {
+      text-align: left !important;
+    }
+
+    canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      box-shadow: var(--pico-card-box-shadow);
+    }
+  </style>
+</head>
+
+<body>
+  <header class="is-fixed">
+    <div class="container">
+      <nav>
+        <ul>
+          <li>
+            <h1>ponio</h1>
+          </li>
+        </ul>
+        <ul>
+          <li><a href="https://github.com/hpc-maths/ponio/" class="contrast"><i data-feather="github"></i>
+              Repository</a>
+          </li>
+          <li><a href="https://ponio.readthedocs.io/en/latest/" class="contrast"><i data-feather="book-open"></i>
+              Documentation</a></li>
+          <li><a class="contrast" aria-label="Turn off dark mode" id="switcher" data-discover="true"><i
+                data-feather="sun"></i></a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main class="container" id="list">
+  </main>
+
+  <template id="rk-method">
+    <article>
+      <header><a class="contrast"></a><span></span></header>
+      <details>
+        <summary>Details</summary>
+        <section>
+          <div class="summary-container container">
+            <table class="summary striped">
+              <tbody>
+                <tr>
+                  <th scope="row">#stages</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">order</th>
+                  <td></td>
+                </tr>
+                <tr>
+                  <th scope="row">stage order</th>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h6>Butcher tableau</h6>
+          <div class="butcher-container container">
+            <table class="butcher"></table>
+          </div>
+
+          <h6>Stability function <span class="Rz"></span>:</h6>
+          <div class="stab-func"></div>
+
+          <h6>Stability domain and order star</h6>
+          <div class="container grid">
+            <figure class="stab-dom">
+              <canvas></canvas>
+              <figcaption>Stability domain: <span></span></figcaption>
+            </figure>
+            <figure class="order-star">
+              <canvas></canvas>
+              <figcaption>Order star: <span></span></figcaption>
+            </figure>
+          </div>
+          <div class="container grid">
+            <figure class="err-dom">
+              <canvas></canvas>
+              <figcaption>Relative error: <span></span> display also lines for isopleths 0.05, 0.25, 0.5 and 0.75 (in
+                red we recall stability domain)</figcaption>
+            </figure>
+          </div>
+
+          <h6>Runge-Kutta scheme:</h6>
+          <div class="ode"></div>
+          <ul class="scheme"></ul>
+        </section>
+      </details>
+    </article>
+  </template>
+
+  <script>
+    feather.replace();
+  </script>
+  <script>
+    const html = document.querySelector("html");
+    const themes = { true: { 'theme': "light", 'icon': "sun" }, false: { 'theme': "dark", 'icon': "moon" } };
+    let light_theme = html.getAttribute("data-theme") == "light";
+
+    const switcher = document.querySelector("#switcher");
+    switcher.addEventListener("click", ev => {
+      light_theme = !light_theme;
+      html.setAttribute("data-theme", themes[light_theme].theme);
+      switcher.innerHTML = feather.icons[themes[light_theme].icon].toSvg();
+    });
+
+    const fill_color = "#00acc1"; //getComputedStyle(document.getElementsByTagName('html')[0]).getPropertyValue('--my-color');
+    const axis_color = "hsl(205deg, 20%, 32%)"; //getComputedStyle(document.getElementsByTagName('html')[0]).getPropertyValue('--color');
+
+    const list = document.querySelectorAll("#list")[0];
+    const url = "/api/analysis.json";
+
+    const parser = new AsciiMathParser(); // to convert python expression (asciimath ich) into LaTeX expression
+    function asciimath(expr) {
+      return expr.replaceAll("**", "^").replaceAll(/\d\*\d/ig, "x");
+    }
+    function render(expr, elm) {
+      katex.render(parser.parse(asciimath(expr)), elm, { displayMode: true });
+      return elm;
+    }
+
+    function data_to_canvas(canvas, data, [xmin, xmax], [ymin, ymax], thresholds, options = {}, inside = true, data2 = undefined) {
+      canvas.height = 512;
+      canvas.width = 512;
+      const n = data[0].length, m = data.length;
+      console.log(canvas.height, canvas.width);
+
+      context = canvas.getContext("2d");
+      projection = d3.geoIdentity().scale(canvas.width / n);
+      path = d3.geoPath(projection, context);
+
+      const contours = d3.contours()
+        .size([n, m])
+        .thresholds(thresholds)
+        ([].concat(...data));
+      contours.forEach(c => {
+        if (c.coordinates.length == 0) return;
+        context.beginPath();
+        path(c);
+        if (inside) {
+          context.rect(0, 0, canvas.width, canvas.height);
+        }
+        context.fillStyle = options.hasOwnProperty('fill_color') ? options.fill_color : "#ff0000";
+        context.fill();
+      });
+      if (data2 !== undefined) {
+        const contours2 = d3.contours()
+          .size([n, m])
+          .thresholds(thresholds)
+          ([].concat(...data2));
+        contours2.forEach(c => {
+          if (c.coordinates.length == 0) return;
+          context.beginPath();
+          path(c);
+          context.lineWidth = 3.0;
+          context.strokeStyle = options.hasOwnProperty('stroke_color') ? options.stroke_color : "#000000";
+          context.stroke();
+        });
+      }
+
+      // draw axis
+      const dx = (xmax - xmin) / canvas.width;
+      const dy = (ymax - ymin) / canvas.height;
+      const i_0 = parseInt((-xmin) / dx), j_0 = parseInt(-ymin / dy);
+
+      context.strokeStyle = options.hasOwnProperty('axis_color') ? options.axis_color : "#000000";
+      context.lineWidth = 1.0;
+      // real axis
+      context.beginPath();
+      context.moveTo(0, j_0);
+      context.lineTo(n, j_0);
+      context.closePath();
+      context.stroke();
+      // imaginary axis
+      context.beginPath();
+      context.moveTo(i_0, 0);
+      context.lineTo(i_0, n);
+      context.closePath();
+      context.stroke();
+
+      // xticks
+      for (x = parseInt(xmin) - 1; x < xmax; ++x) {
+        context.beginPath();
+        context.moveTo(parseInt((x - xmin) / dx), j_0 - 5);
+        context.lineTo(parseInt((x - xmin) / dx), j_0 + 5);
+        context.closePath();
+        context.stroke();
+      }
+      // yticks
+      for (y = parseInt(ymin) - 1; y < ymax; ++y) {
+        context.beginPath();
+        context.moveTo(i_0 - 5, parseInt((y - ymin) / dy));
+        context.lineTo(i_0 + 5, parseInt((y - ymin) / dy));
+        context.closePath();
+        context.stroke();
+      }
+
+      return canvas;
+    }
+
+    fetch(url)
+      .then(res => res.json())
+      .then(out => {
+        var template = document.querySelector("#rk-method")
+        out.forEach(rk => {
+          var rk_elm = document.importNode(template.content, true);
+          rk_elm.querySelector("article").id = rk.id;
+
+          var header = rk_elm.querySelector("header a");
+          header.textContent = rk.label;
+          header.href = `#${rk.id}`;
+
+          var butcher = rk_elm.querySelector(".butcher");
+          for (i = 0; i < rk.A.length; ++i) {
+            let tr = document.createElement("tr");
+            let ci = document.createElement("td");
+            render(rk.c[i], ci);
+            tr.appendChild(ci);
+
+            for (j = 0; j < rk.A[i].length; ++j) {
+              let aij = document.createElement("td");
+              render(rk.A[i][j], aij);
+              tr.appendChild(aij);
+            }
+            butcher.appendChild(tr);
+          }
+          let tr = document.createElement("tr");
+          tr.appendChild(document.createElement("td"));
+          for (i = 0; i < rk.b.length; ++i) {
+            let bi = document.createElement("td");
+            render(rk.b[i], bi);
+            tr.appendChild(bi);
+          }
+          butcher.appendChild(tr);
+          if (rk.b2 !== undefined) {
+            butcher.classList.add("embedded");
+            let tr = document.createElement("tr");
+            tr.appendChild(document.createElement("td"));
+            for (i = 0; i < rk.b2.length; ++i) {
+              let bi = document.createElement("td");
+              render(rk.b2[i], bi);
+              tr.appendChild(bi);
+            }
+            butcher.appendChild(tr);
+          }
+
+          var td = rk_elm.querySelectorAll(".summary td");
+          td[0].textContent = rk.nstages;
+          td[1].textContent = rk.order;
+          td[2].textContent = rk.stage_order;
+
+          // stability function
+          var Rz = rk_elm.querySelector(".Rz");
+          katex.render("R(z)", Rz);
+
+          var stability_function = rk_elm.querySelector(".stab-func");
+          render(rk.stability_function, stability_function);
+
+          // stability domain
+          var d_eq = rk_elm.querySelector(".stab-dom figcaption span");
+          katex.render(String.raw`\mathcal{D} = \left\{ z \in \mathbb{C} \,/\, \left|R(z)\right| \leq 1 \right\}`, d_eq, { displayMode: true });
+
+          var stab_dom = rk_elm.querySelector(".stab-dom canvas");
+          stab_dom.addEventListener('mouseover', ev => {
+            const url_domains = `api/${rk.id}_domains.json`;
+            fetch(url_domains)
+              .then(res => res.json())
+              .then(out => {
+                data_to_canvas(stab_dom, out.stability_domain.data, [out.stability_domain.xmin, out.stability_domain.xmax], [out.stability_domain.ymin, out.stability_domain.ymax], [1.0], options = { "fill_color": fill_color, "stroke_color": "#000000", "axis_color": axis_color }, inside = true, data2 = out.stability_domain.data_embedded);
+              });
+          }, { 'once': true });
+
+          // order star
+          var o_eq = rk_elm.querySelector(".order-star figcaption span");
+          katex.render(String.raw`\mathcal{A}_- = \left\{ z \in \mathbb{C} \,/\, \left|\frac{R(z)}{e^z}\right| < 1 \right\}`, o_eq, { displayMode: true });
+
+          var order_star = rk_elm.querySelector(".order-star canvas");
+          order_star.addEventListener('mouseover', ev => {
+            const url_domains = `api/${rk.id}_domains.json`;
+            fetch(url_domains)
+              .then(res => res.json())
+              .then(out => {
+                data_to_canvas(order_star, out.order_star.data, [out.order_star.xmin, out.order_star.xmax], [out.order_star.ymin, out.order_star.ymax], [1.0], options = { "fill_color": fill_color, "stroke_color": "#000000", "axis_color": axis_color });
+              });
+          }, { 'once': true });
+
+          // error domain
+          var e_eq = rk_elm.querySelector(".err-dom figcaption span");
+          katex.render(String.raw`e = \left\{ z \in \mathbb{C} \,/\, \left|\frac{R(z) - e^z}{e^z}\right| > 1 \right\}`, e_eq, { displayMode: true });
+
+
+          // scheme
+          var ode = rk_elm.querySelector(".ode");
+          katex.render(String.raw`\dot{y} = f(t,y)`, ode, { displayMode: true });
+
+          var scheme = rk_elm.querySelector(".scheme");
+          rk.scheme.map(eq => {
+            let li = document.createElement("li");
+            katex.render(eq, li, { displayMode: true });
+            scheme.appendChild(li);
+          });
+
+          list.appendChild(rk_elm);
+        });
+      });
+
+
+
+  </script>
+</body>
+
+</html>

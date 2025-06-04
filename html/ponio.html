@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <title>ponio - presentation overview of numerical integrators for ODE</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+  <style>
+    :root {
+      --pico-typography-spacing-vertical: 1.5rem;
+      --pico-form-element-spacing-vertical: 1rem;
+      --pico-form-element-spacing-horizontal: 1.25rem;
+    }
+
+    h1 {
+      --pico-font-family: "Ubuntu", cursive;
+      --pico-font-weight: 400;
+      --pico-typography-spacing-vertical: 0.5rem;
+    }
+
+    [data-theme="light"],
+    :root:not([data-theme="dark"]) {
+      --transparent-background: #ffffffaa;
+    }
+
+    @media only screen and (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --transparent-background: #181c25aa;
+      }
+    }
+
+    [data-theme="dark"] {
+      --transparent-background: #181c25aa;
+    }
+
+    a[role="button"] {
+      --pico-font-weight: 700;
+    }
+
+    main {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    main article {
+      flex: 1 1 150px;
+    }
+
+    #lorenz-canvas {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: -1;
+    }
+
+    .transparent {
+      background-color: var(--transparent-background);
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@v0.176.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@<version>/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <main class="container">
+    <article class="component transparent">
+      <h1>ponio</h1>
+      <div class="grid">
+        <a role="button" tabindex="0"
+          style="--pico-primary-background: #f6b93b; --pico-border-color: #fa983a; --pico-primary-hover-background: var(--pico-border-color);"
+          href="https://hpc-maths.github.io/ponio/">
+          <i data-feather="airplay"></i> List of methods
+        </a>
+        <a role="button" tabindex="0"
+          style="--pico-primary-background: #60a3bc; --pico-border-color: #3c6382; --pico-primary-hover-background: var(--pico-border-color);"
+          href="https://github.com/hpc-maths/ponio/">
+          <i data-feather="github"></i> Repository
+        </a>
+        <a role="button" tabindex="0"
+          style="--pico-primary-background: #38ada9; --pico-border-color: #079992; --pico-primary-hover-background: var(--pico-border-color);"
+          href="https://ponio.readthedocs.io/en/latest/">
+          <i data-feather="book-open"></i> Documentation
+        </a>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    feather.replace();
+  </script>
+  <script type="module" src="/lorenz.js"></script>
+</body>
+
+</html>

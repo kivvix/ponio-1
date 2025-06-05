@@ -21,7 +21,6 @@
     integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6"
     crossorigin="anonymous"></script>
 
-
   <!-- highlight -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
 
@@ -187,10 +186,32 @@
       text-align: left !important;
     }
 
+    .grid {
+      display: flex;
+      flex: 1 1 300px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    figure {
+      max-width: 300px;
+    }
+
     canvas {
       width: 100%;
       aspect-ratio: 1 / 1;
       box-shadow: var(--pico-card-box-shadow);
+    }
+
+    pre button {
+      padding: 0.1rem;
+      float: right;
+    }
+
+    pre code {
+      margin-top: -3rem;
+      margin-bottom: -2rem;
+      overflow-y: scroll;
     }
   </style>
 </head>
@@ -241,6 +262,10 @@
                   <th scope="row">stage order</th>
                   <td></td>
                 </tr>
+                <tr>
+                  <th scope="row">ponio id</th>
+                  <td></td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -263,18 +288,34 @@
               <canvas></canvas>
               <figcaption>Order star: <span></span></figcaption>
             </figure>
-          </div>
-          <div class="container grid">
             <figure class="err-dom">
               <canvas></canvas>
               <figcaption>Relative error: <span></span> display also lines for isopleths 0.05, 0.25, 0.5 and 0.75 (in
-                red we recall stability domain)</figcaption>
+                green we recall stability domain)</figcaption>
             </figure>
           </div>
 
           <h6>Runge-Kutta scheme:</h6>
           <div class="ode"></div>
-          <ul class="scheme"></ul>
+          <ul class="scheme runge-kutta"></ul>
+
+          <details>
+            <summary>Example of implementation in Python:</summary>
+            <pre class="rk-code"><button class="outline secondary clipboard" data-tooltip="copy" data-placement="left" ></button>
+              <code class="language-py"></code>
+            </pre>
+          </details>
+
+          <h6>Lawson scheme:</h6>
+          <div class="l-ode"></div>
+          <ul class="scheme lawson"></ul>
+
+          <details>
+            <summary>Example of implementation in Python:</summary>
+            <pre class="lrk-code"><button class="outline secondary clipboard" data-tooltip="copy" data-placement="left" ></button>
+              <code class="language-py"></code>
+            </pre>
+          </details>
         </section>
       </details>
     </article>
@@ -295,7 +336,7 @@
       switcher.innerHTML = feather.icons[themes[light_theme].icon].toSvg();
     });
 
-    const fill_color = "#00acc1"; //getComputedStyle(document.getElementsByTagName('html')[0]).getPropertyValue('--my-color');
+    const fill_color = "#82ccdd"; //getComputedStyle(document.getElementsByTagName('html')[0]).getPropertyValue('--my-color');
     const axis_color = "hsl(205deg, 20%, 32%)"; //getComputedStyle(document.getElementsByTagName('html')[0]).getPropertyValue('--color');
 
     const list = document.querySelectorAll("#list")[0];
@@ -311,10 +352,9 @@
     }
 
     function data_to_canvas(canvas, data, [xmin, xmax], [ymin, ymax], thresholds, options = {}, inside = true, data2 = undefined) {
-      canvas.height = 512;
-      canvas.width = 512;
+      canvas.height = 300;
+      canvas.width = 300;
       const n = data[0].length, m = data.length;
-      console.log(canvas.height, canvas.width);
 
       context = canvas.getContext("2d");
       projection = d3.geoIdentity().scale(canvas.width / n);
@@ -439,6 +479,7 @@
           td[0].textContent = rk.nstages;
           td[1].textContent = rk.order;
           td[2].textContent = rk.stage_order;
+          td[3].innerHTML = `<a href="https://ponio.readthedocs.io/en/latest/search.html?q=${rk.id}" ><code>${rk.id}</code></a>`;
 
           // stability function
           var Rz = rk_elm.querySelector(".Rz");
@@ -479,25 +520,109 @@
           var e_eq = rk_elm.querySelector(".err-dom figcaption span");
           katex.render(String.raw`e = \left\{ z \in \mathbb{C} \,/\, \left|\frac{R(z) - e^z}{e^z}\right| > 1 \right\}`, e_eq, { displayMode: true });
 
+          var err_dom = rk_elm.querySelector(".err-dom canvas");
+          err_dom.addEventListener('mouseover', ev => {
+            const url_domains = `api/${rk.id}_domains.json`;
+            fetch(url_domains)
+              .then(res => res.json())
+              .then(out => {
+                data_to_canvas(err_dom, out.relative_error.data, [out.relative_error.xmin, out.relative_error.xmax], [out.relative_error.ymin, out.relative_error.ymax], [1.0], options = { "fill_color": fill_color, "stroke_color": "#000000", "axis_color": axis_color }, inside = false);
+
+                const n = out.relative_error.data[0].length, m = out.relative_error.data.length;
+                context = err_dom.getContext("2d");
+                projection = d3.geoIdentity().scale(err_dom.width / n);
+                path = d3.geoPath(projection, context);
+                const rerrors = d3.contours()
+                  .size([n, m])
+                  .thresholds([0.05, 0.25, 0.5, 0.75])
+                  ([].concat(...out.relative_error.data));
+                rerrors.forEach(c => {
+                  if (c.coordinates.length == 0) return;
+                  context.beginPath();
+                  path(c);
+                  context.rect(-1, -1, err_dom.width + 1, err_dom.height + 1);
+                  context.lineWidth = 3.0;
+                  context.strokeStyle = "rgba(16,149,193,0.125)";
+                  context.stroke();
+                });
+                const stab = d3.contours()
+                  .size([n, m])
+                  .thresholds([1.0])
+                  ([].concat(...out.stability_domain.data));
+                stab.forEach(c => {
+                  if (c.coordinates.length == 0) return;
+                  context.beginPath();
+                  path(c);
+                  context.rect(0, 0, err_dom.width, err_dom.height);
+                  context.fillStyle = "#b8e994aa";
+                  context.fill();
+                });
+              });
+          });
+
 
           // scheme
           var ode = rk_elm.querySelector(".ode");
           katex.render(String.raw`\dot{y} = f(t,y)`, ode, { displayMode: true });
 
-          var scheme = rk_elm.querySelector(".scheme");
+          var scheme = rk_elm.querySelector(".scheme.runge-kutta");
           rk.scheme.map(eq => {
             let li = document.createElement("li");
             katex.render(eq, li, { displayMode: true });
             scheme.appendChild(li);
           });
 
+          // pycode
+          var rkpy_copy = rk_elm.querySelector(".rk-code button");
+          rkpy_copy.innerHTML = feather.icons["paperclip"].toSvg();
+
+          var rkpy_code = rk_elm.querySelector(".rk-code code");
+          rkpy_code.id = `code-${rk.id}`;
+          rkpy_copy.setAttribute("data-clipboard-target", `#${rkpy_code.id}`);
+
+          if (rk.hasOwnProperty('code')) {
+            rkpy_code.innerHTML = hljs.highlight(rk.code, { language: 'python' }).value;
+          }
+
+          // lawson scheme
+          var ode = rk_elm.querySelector(".l-ode");
+          katex.render(String.raw`\dot{y} = Ly + N(t,y)`, ode, { displayMode: true });
+
+          var l_scheme = rk_elm.querySelector(".scheme.lawson");
+          rk.lawson_scheme.map(eq => {
+            let li = document.createElement("li");
+            katex.render(eq, li, { displayMode: true });
+            l_scheme.appendChild(li);
+          });
+
+          // pycode
+          var lrkpy_copy = rk_elm.querySelector(".lrk-code button");
+          lrkpy_copy.innerHTML = feather.icons["paperclip"].toSvg();
+
+          var lrkpy_code = rk_elm.querySelector(".lrk-code code");
+          lrkpy_code.id = `code-l${rk.id}`;
+          lrkpy_copy.setAttribute("data-clipboard-target", `#${lrkpy_code.id}`);
+
+          if (rk.hasOwnProperty('lawson_code')) {
+            lrkpy_code.innerHTML = hljs.highlight(rk.lawson_code, { language: 'python' }).value;
+
+          }
+
           list.appendChild(rk_elm);
         });
       });
 
-
-
   </script>
+
+  <!-- highlight -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"
+    type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/languages/python.min.js"
+    type="text/javascript"></script>
+
+  <!-- clipboard -->
+  <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.10/dist/clipboard.min.js"></script>
+  <script src="clipboardSet.js" type="text/javascript"></script>
 </body>
 
 </html>

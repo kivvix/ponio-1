@@ -120,6 +120,10 @@ now the :cpp:func:`ponio::solve` function can takes this lambda without underlyi
   :lines: 32
   :lineno-start: 32
 
+.. note::
+
+  The ponio library provide a main interface that takes the triplet :math:`(t, y, \dot{y})`, but, because of template expressions, the type of the second parameter (:math:`y`) could be much more complicated than :code:`state_t`. The last argument of the function :math:`\dot{y}` should be pass by reference to keep change.
+
 
 The full example can be found in :download:`lorenz_rk.cpp <../_static/cpp/lorenz_rk.cpp>`.
 

@@ -108,16 +108,17 @@ with in the first column the current time, the last one the current time step an
 
 Like many other library, ponio library provides an interface with a function :math:`f` which takes the output by reference to provides extra-allocation:
 
-.. literalinclude:: ../_static/cpp/lorenz_rk.txt
-    :language: text
-    :lines: 20-25
+.. literalinclude:: ../_static/cpp/lorenz_rk.cpp
+  :language: cpp
+  :lines: 20-25
   :lineno-start: 20
 
 now the :cpp:func:`ponio::solve` function can takes this lambda without underlying it in a class:
 
-.. literalinclude:: ../_static/cpp/lorenz_rk.txt
-    :language: text
-    :lines: 32
+.. literalinclude:: ../_static/cpp/lorenz_rk.cpp
+  :language: cpp
+  :lines: 32
+  :lineno-start: 32
 
 
 The full example can be found in :download:`lorenz_rk.cpp <../_static/cpp/lorenz_rk.cpp>`.

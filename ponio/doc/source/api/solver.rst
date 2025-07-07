@@ -74,6 +74,18 @@ Helper function for time_iterator
    :project: ponio
    :members:
 
+Stentinel for :cpp:class:`ponio::time_iterator`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. doxygenstruct:: ponio::time_sentinel_iterator
+   :project: ponio
+   :members:
+
+
+Helper function for time_sentinel_iterator
+
+.. doxygenfunction:: ponio::make_sentinel_iterator
+   :project: ponio
 
 Iteration information class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

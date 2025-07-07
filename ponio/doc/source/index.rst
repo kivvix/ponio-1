@@ -14,6 +14,7 @@ The library ponio is a collection of time integrators for solving differential e
 * Lawson methods (based with an underlying Runge-Kutta method) (LRK)
 * exponential Runge-Kutta methods (expRK)
 * Runge-Kutta Chebyshev (RKC)
+* Runge-Kutta Legendre (RKL)
 * splitting method (Lie or Strang)
 
 This library aims to be the easiest to use without compromising on performance.

@@ -221,6 +221,55 @@ namespace ponio::detail
     }
 #endif
 
+    /**
+     * @brief join id static attribut of collection of data structures
+     *
+     * @tparam tableau_ts collection of data structures
+     */
+    template <typename... tableau_ts>
+    struct join_id
+    {
+        using size       = std::integral_constant<std::size_t, ( tableau_ts::id.size() + ... + 0 )>;
+        using c_str_type = std::array<char, size() + 1>;
+
+        static constexpr c_str_type
+        join_as_array() noexcept
+        {
+            c_str_type arr{};
+
+            auto append = [i = 0, &arr]( auto const& id ) mutable
+            {
+                for ( auto c : id )
+                {
+                    arr[i++] = c;
+                }
+            };
+
+            ( append( tableau_ts::id ), ... );
+
+            arr[size()] = 0; // last character is null like c-string
+            return arr;
+        }
+
+        // real container
+        static constexpr c_str_type arr = join_as_array();
+        // string-view value
+        static constexpr std::string_view value{ arr.data(), size() };
+    };
+
+    /**
+     * @brief helper for join_id to access to value
+     *
+     * @tparam tableau_ts collection of data structures
+     */
+    template <typename... tableau_ts>
+    static constexpr auto join_id_v = join_id<tableau_ts...>::value;
+
+    struct separator
+    {
+        static constexpr std::string_view id = "__";
+    };
+
     template <typename Arithmetic, std::size_t... Is>
     constexpr Arithmetic
     power_impl( Arithmetic&& value, std::index_sequence<Is...> )

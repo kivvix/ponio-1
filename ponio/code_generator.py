@@ -546,30 +546,43 @@ if __name__ == '__main__':
         print(f"{rk.label:>30}", end="\r")
         return dict(rk)
 
+    list_erk = map(dict_and_log, all_meths['eRK'])
+    list_dirk = map(dict_and_log, all_meths['diRK'])
+    list_exprk = map(dict_and_log, all_meths['expRK'])
+    list_ark = map(dict_and_log, all_meths['aRK'])
+
     with open(args.output, 'w') as butcher_hxx:
         butcher_hxx.write(template.render(
-            list_erk=map(dict_and_log, all_meths['eRK']),
-            list_dirk=map(dict_and_log, all_meths['diRK']),
-            list_exprk=map(dict_and_log, all_meths['expRK']),
-            list_ark=map(dict_and_log, all_meths['aRK'])
+            list_erk=list_erk,
+            list_dirk=list_dirk,
+            list_exprk=list_exprk,
+            list_ark=list_ark
         ))
 
     if args.doc:
         # main list
-        template_doc = env.get_template("template/tpl_doc_algorithms.rst")
+        template_doc = env.get_template("tpl_doc_algorithms.rst")
 
         with open(f"{args.doc_output}/list_algorithm.rst", 'w') as file:
             file.write(
                 template_doc.render(
-                    list_erk=cg_list_erk, list_exprk=cg_list_exprk, list_dirk=cg_list_dirk)
+                    list_erk=list_erk,
+                    list_dirk=list_dirk,
+                    list_exprk=list_exprk,
+                    list_ark=list_ark
+                )
             )
 
         # sublists
         for tpl in ("erk", "dirk", "lrk", "dp", "exprk"):
-            template_doc = env.get_template(f"template/tpl_doc_{tpl}.rst")
+            template_doc = env.get_template(f"tpl_doc_{tpl}.rst")
 
             with open(f"{args.doc_output}/list_alg_{tpl}.rst", 'w') as file:
                 file.write(
                     template_doc.render(
-                        list_erk=cg_list_erk, list_exprk=cg_list_exprk, list_dirk=cg_list_dirk)
+                        list_erk=list_erk,
+                        list_dirk=list_dirk,
+                        list_exprk=list_exprk,
+                        list_ark=list_ark
+                    )
                 )

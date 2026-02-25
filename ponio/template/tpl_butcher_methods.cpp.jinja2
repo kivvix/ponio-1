@@ -34,7 +34,9 @@ namespace ponio::runge_kutta
 {% import "tpl_exponential_runge_kutta.cpp.jinja2" as exponential_runge_kutta %}
 {% import "tpl_additive_runge_kutta.cpp.jinja2" as additive_runge_kutta %}
 
-// explicit Runge-Kutta methods /////////////////////////////////////
+// ------------------------------------------------------------------
+// explicit Runge-Kutta methods -------------------------------------
+// ------------------------------------------------------------------
 {% for rk in list_erk %}
 
 {{ runge_kutta.butcher_tableau(rk) }}
@@ -57,7 +59,9 @@ using erk_tuple = std::tuple< {{ list_erk | sformat("{}_t<value_t>", attribute="
 template <typename value_t, typename Exp_t>
 using lrk_tuple = std::tuple< {{ list_erk | sformat("decltype(l{}_t<value_t, Exp_t>)", attribute="id") | join(", ") }} >;
 
-// diagonal implicit Runge-Kutta methods ////////////////////////////
+// ------------------------------------------------------------------
+// diagonal implicit Runge-Kutta methods ----------------------------
+// ------------------------------------------------------------------
 {% for rk in list_dirk %}
 
 {{ runge_kutta.butcher_tableau(rk) }}
@@ -73,7 +77,9 @@ template <typename value_t, typename linear_algebra_t=void, typename ... Args>
 using dirk_tuple = std::tuple< {{ list_dirk | sformat("decltype({}_t<value_t, linear_algebra_t, Args...>)", attribute="id") | join(", ") }} >;
 
 
-// exponential Runge-Kutta methods //////////////////////////////////
+// ------------------------------------------------------------------
+// exponential Runge-Kutta methods ----------------------------------
+// ------------------------------------------------------------------
 {% for rk in list_exprk %}
 
 {{ exponential_runge_kutta.expRK_butcher_tableau(rk) }}
@@ -89,7 +95,9 @@ template <typename value_t, typename linear_t>
 using exprk_tuple = std::tuple< {{ list_exprk | sformat("{}_t<value_t, linear_t>", attribute="id") | join(", ") }} >;
 
 
-// additive Runge-Kutta methods /////////////////////////////////////
+// ------------------------------------------------------------------
+// additive Runge-Kutta methods -------------------------------------
+// ------------------------------------------------------------------
 {% for rk in list_ark %}
 
 {{ additive_runge_kutta.pair_butcher_tableau(rk) }}

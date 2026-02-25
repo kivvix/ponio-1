@@ -37,7 +37,7 @@ struct butcher_{{ rk.id }}
   butcher_{{ rk.id }}()
   : a( {% for aij in rk.A.code %}{{ aij }}{{ " , " if not loop.last else "" }}{%- endfor %} )
   , b( {% for bi  in rk.b.code %}{{ bi  }}{{ " , " if not loop.last else "" }}{%- endfor %} )
-  , c({ {{ rk.c }} })
+  , c({ {{ rk.c|join(", ") }} })
   {}
 };
 {% endmacro %}{# end macro expRK_butcher_tableau(rk) #}

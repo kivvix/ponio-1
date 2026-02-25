@@ -6,6 +6,7 @@
 
 import json
 import argparse
+import os
 
 import sympy as sp
 import numpy as np
@@ -536,7 +537,8 @@ if __name__ == '__main__':
     print("total", total_meth)
 
     jinja2.filters.FILTERS['sformat'] = sformat
-    template_dir = "../ponio/template"
+    local_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(local_dir, "template")
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(template_dir)
     )
@@ -546,10 +548,10 @@ if __name__ == '__main__':
         print(f"{rk.label:>30}", end="\r")
         return dict(rk)
 
-    list_erk = map(dict_and_log, all_meths['eRK'])
-    list_dirk = map(dict_and_log, all_meths['diRK'])
-    list_exprk = map(dict_and_log, all_meths['expRK'])
-    list_ark = map(dict_and_log, all_meths['aRK'])
+    list_erk = [dict_and_log(rk) for rk in all_meths['eRK']]
+    list_dirk = [dict_and_log(rk) for rk in all_meths['diRK']]
+    list_exprk = [dict_and_log(rk) for rk in all_meths['expRK']]
+    list_ark = [dict_and_log(rk) for rk in all_meths['aRK']]
 
     with open(args.output, 'w') as butcher_hxx:
         butcher_hxx.write(template.render(

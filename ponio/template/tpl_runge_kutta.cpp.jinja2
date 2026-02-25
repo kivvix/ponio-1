@@ -1,0 +1,190 @@
+// Copyright 2022 PONIO TEAM. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// clang-format off
+
+{# macro butcher_parent ---------------------------------------------
+
+- `is_embedded`: (boolean) if true parent is `adaptive_butcher_tableau`, `butcher_tableau` otherwise
+- `N`: (int) the number of stages of the method
+
+Helper macro to display the parent structure in inheritance of Butcher tableaus
+#}
+{% macro butcher_parent(is_embedded, N) -%}
+    butcher::{{ "adaptive_" if is_embedded else "" }}butcher_tableau<{{ N }}, value_t>
+{%- endmacro %}
+
+{# macro butcher_tableau --------------------------------------------
+
+- `rk`: the Butcher tableau to display as a C++ structure
+
+Generate structure to store Butcher tableau for the parameter `rk`, works only for explicit, and diagonal implicit method
+
+> Note:
+> * for exponential Runge-Kutta method use `expRK_butcher_tableau` macro
+> * for additive Runge-Kutta method use `pair_butcher_tableau` macro
+#}
+{% macro butcher_tableau(rk) -%}
+/**
+ * @brief Butcher tableau of {{ rk.label }} method
+ * @tparam value_t type of coefficient (``double`` by default)
+ */
+template <typename value_t=double>
+struct butcher_{{ rk.id }} : public {{ butcher_parent(rk.is_embedded, rk.A|length) }}
+{
+  using base_t = {{ butcher_parent(rk.is_embedded, rk.A|length) }};
+  static constexpr std::size_t N_stages = base_t::N_stages;
+  static constexpr std::size_t order    = {{ rk.order }};
+  static constexpr std::string_view id  = "{{ rk.id }}";
+
+  using base_t::A;
+  using base_t::b;
+  using base_t::c;
+
+  butcher_{{ rk.id }}()
+  : base_t(
+    {{ '{{' }}
+    {%- for ai in rk.A %}
+      { {{ ai|join(", ") }} }{{ ",      " if not loop.last else "" }}
+    {%- endfor %}
+    {{ '}}' }}, // A
+    { {{ rk.b|join(", ") }} }, // b
+    {% if rk.is_embedded -%}{ {{ rk.b2|join(", ") }} }, // b2 {%- endif %}
+    { {{ rk.c|join(", ") }} }  // c
+  )
+  {}
+};
+{%- endmacro %}{# end macro butcher_tableau(rk) #}
+
+
+{# macro explicit_runge_kutta ---------------------------------------
+
+- `rk`: the Butcher tableau of an explicit Runge-Kutta method to display as explicit Runge-Kutta structure
+
+Helper macro to display documentation and using of explicit Runge-Kutta method from its Butcher tableau
+#}
+{% macro explicit_runge_kutta(rk) -%}
+/**
+ * @brief {{ rk.label }} method
+ * @tparam value_t type of coefficient (``double`` by default)
+ *
+ * @details see more on [ponio](https://hpc-maths.github.io/ponio/#{{ rk.id }})
+ *
+ * This method is based on the following Butcher tableau:
+ *
+ * \f[
+ *  \begin{array}{c|{%- for ci in rk.butcher.c -%}c{%- endfor -%}}
+      {%- for ai in rk.butcher.A %}
+ *      {{ rk.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
+ {%- endfor %}
+ *    \hline
+ *      & {{ rk.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *    \hline
+ *      & {{ rk.butcher.b2|join(' & ') }}
+{%- endif %}
+ *  \end{array}
+ * \f]
+ *
+ * + **stages:** {{ rk.A|length }}
+ * + **order:** {{ rk.order }}
+ * + **stages order:** {{ rk.stage_order }}
+ * + **stability function:** \f[ {{ rk.stability_function }} \f] {% if 'bib' in rk %}
+ * + **bibliography:** [{{ rk.bib.bib }}]({{ rk.bib.url }})
+{%- endif %}
+ *
+ */
+template <typename value_t>
+using {{ rk.id }}_t = explicit_runge_kutta::explicit_runge_kutta<butcher_{{ rk.id }}<value_t>>;
+
+using {{ rk.id }} = explicit_runge_kutta::explicit_runge_kutta<butcher_{{ rk.id }}<double>>;
+{%- endmacro %}{# end macro explicit_runge_kutta(rk) #}
+
+
+{# macro lawson_runge_kutta -----------------------------------------
+
+- `rk`: the Butcher tableau of an explicit Runge-Kutta method to display as explicit Lawson-Runge-Kutta lambda-function
+
+Helper macro to display documentation and using of Lawson-Runge-Kutta method from its Butcher tableau
+#}
+{% macro lawson_runge_kutta(rk) -%}
+/**
+ * @brief Lawson {{ rk.label }} method
+ *
+ * @tparam value_t type of coefficient (``double`` by default)
+ *
+ * @param exp_ exponential function for the Lawson method
+ *
+ * @details see more on [ponio](https://hpc-maths.github.io/ponio/#{{ rk.id }})
+ *
+ * + **stages:** {{ rk.A|length }}
+ * + **order:** {{ rk.order }}
+ * + **underlying Runge-Kutta method:** {{ rk.label }} (for more information see ponio::runge_kutta::{{ rk.id }}_t)
+ *
+ */
+template <typename value_t, typename Exp_t>
+constexpr auto l{{ rk.id }}_t = []( Exp_t exp_ )
+{
+  return lawson_runge_kutta::make_lawson<butcher_{{ rk.id }}<value_t>,Exp_t>(exp_);
+};
+
+template <typename Exp_t>
+auto
+l{{ rk.id }}( Exp_t exp_ )
+{
+  return lawson_runge_kutta::make_lawson<butcher_{{ rk.id }}<double>,Exp_t>(exp_);
+}
+{%- endmacro %}{# end macro lawson_runge_kutta(rk) #}
+
+{# macro diagonal_implicit_runge_kutta ------------------------------
+
+- `rk`: the Butcher tableau of a diagonal implicit Runge-Kutta method to display as a C++ function
+
+Helper macro to display documentation and lambda-function of a diagonal-implicit Runge-Kutta method from its Butcher tableau
+#}
+{% macro diagonal_implicit_runge_kutta(rk) -%}
+/**
+ * @brief {{ rk.label }} method
+ *
+ * @tparam value_t          type of coefficient (``double``by default)
+ * @tparam linear_algebra_t type that provides linear algebra if it is undefined for state_t (``void`` by default)
+ * @tparam Args optional    arguments to build linear_algebra_t object
+ *
+ * This method is based on the following Butcher tableau:
+ *
+ * \f[
+ *  \begin{array}{c|{%- for ci in rk.butcher.c -%}c{%- endfor -%}}
+      {%- for ai in rk.butcher.A %}
+ *      {{ rk.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
+ {%- endfor %}
+ *    \hline
+ *      & {{ rk.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *    \hline
+ *      & {{ rk.butcher.b2|join(' & ') }}
+{%- endif %}
+ *  \end{array}
+ * \f]
+ *
+ * + **stages:** {{ rk.A|length }}
+ * + **order:** {{ rk.order }}
+ * + **stages order:** {{ rk.stage_order }}
+ * + **stability function:** \f[ {{ rk.stability_function }} \f] {% if 'bib' in rk %}
+ * + **bibliography:** [{{ rk.bib.bib }}]({{ rk.bib.url }})
+{%- endif %}
+ *
+ */
+template <typename value_t, typename linear_algebra_t=void, typename ... Args>
+constexpr auto {{ rk.id }}_t = []( Args ... args )
+{
+  return diagonal_implicit_runge_kutta::make_dirk<butcher_{{ rk.id }}<value_t>, linear_algebra_t>(args...);
+};
+
+template <typename linear_algebra_t=void, typename ... Args>
+auto
+{{ rk.id }} ( Args ... args )
+{
+  return diagonal_implicit_runge_kutta::make_dirk<butcher_{{ rk.id }}<double>, linear_algebra_t>(args...);
+}
+{% endmacro %}{# end macro diagonal_implicit_runge_kutta #}
+
+// clang-format on

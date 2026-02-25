@@ -1,0 +1,82 @@
+// Copyright 2022 PONIO TEAM. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// clang-format off
+
+{# macro expRK_butcher_tableau --------------------------------------
+
+- `rk`: the Butcher tableau to display as a C++ structure
+
+Generate structure to store Butcher tableau for the parameter `rk`, works only for exponential Runge-Kutta method
+
+> Note:
+> * for classical Runge-Kutta method use `butcher_tableau` macro
+> * for additive Runge-Kutta method use `pair_butcher_tableau` macro
+#}
+{% macro expRK_butcher_tableau(rk) -%}
+/**
+ * @brief Butcher tableau of {{ rk.label }} method
+ * @tparam _value_t  type of coefficient (``double`` by default)
+ * @tparam _linear_t type of linear part (``double`` by default)
+ */
+template <typename _value_t=double, typename _linear_t=double>
+struct butcher_{{ rk.id }}
+{
+  using value_t  = _value_t;
+  using linear_t = _linear_t;
+  using func_t   = std::function<linear_t(linear_t &&)>;
+  static constexpr std::size_t N_stages = {{ rk.b.type|length }};
+  static constexpr std::size_t order    = {{ rk.order }};
+  static constexpr std::string_view id  = "{{ rk.id }}";
+
+  std::tuple<{% for t in rk.A.type -%}{{ t }}{{ " , " if not loop.last else "" }}{%- endfor %}> a;
+  std::tuple<{% for t in rk.b.type -%}{{ t }}{{ " , " if not loop.last else "" }}{%- endfor %}> b;
+  std::array<value_t, N_stages> c;
+
+  butcher_{{ rk.id }}()
+  : a( {% for aij in rk.A.code %}{{ aij }}{{ " , " if not loop.last else "" }}{%- endfor %} )
+  , b( {% for bi  in rk.b.code %}{{ bi  }}{{ " , " if not loop.last else "" }}{%- endfor %} )
+  , c({ {{ rk.c }} })
+  {}
+};
+{% endmacro %}{# end macro expRK_butcher_tableau(rk) #}
+
+{# macro exponential_runge_kutta ------------------------------------
+
+- `rk`: the Butcher tableau of an exponential Runge-Kutta method to display as structure
+
+Helper macro to display documentation and using of exponential Runge-Kutta method form its Butcher tableau
+#}
+{% macro exponential_runge_kutta(rk) -%}
+/**
+ * @brief {{ rk.label }} method
+ * @tparam value_t  type of coefficient (``double``by default)
+ * @tparam linear_t type of coefficient (``double``by default)
+ *
+ * This method is based on the following Butcher tableau:
+ *
+ * \f[
+ *  \begin{array}{c|{%- for ci in rk.butcher.c -%}c{%- endfor -%}}
+      {%- for ai in rk.butcher.A %}
+ *      {{ rk.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
+ {%- endfor %}
+ *    \hline
+ *      & {{ rk.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *    \hline
+ *      & {{ rk.butcher.b2|join(' & ') }}
+{%- endif %}
+ *  \end{array}
+ * \f]
+ *  {% if 'bib' in rk %}
+ * + **bibliography:** [{{ rk.bib.bib }}]({{ rk.bib.url }})
+{%- endif %}
+ *
+ */
+template <typename value_t, typename linear_t>
+using {{ rk.id }}_t = exponential_runge_kutta::explicit_exp_rk_butcher<butcher_{{ rk.id }}<value_t, linear_t>>;
+
+using {{ rk.id }} = exponential_runge_kutta::explicit_exp_rk_butcher<butcher_{{ rk.id }}<double, double>>;
+{%- endmacro %}{# end macro exponential_runge_kutta(rk) #}
+
+// clang-format on

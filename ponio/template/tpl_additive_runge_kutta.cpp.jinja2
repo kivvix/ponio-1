@@ -1,0 +1,150 @@
+// Copyright 2022 PONIO TEAM. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// clang-format off
+{% import "tpl_runge_kutta.cpp.jinja2" as runge_kutta %}
+
+{# macro pair_butcher_tableau ---------------------------------------
+
+- `rk`: the pair of Butcher tableaus to display as a C++ structure
+
+Generate structure to store Butcher tableau for explicit and implicit method and the structure to link the two methods
+
+> Note:
+> * for classical Runge-Kutta method use `butcher_tableau` macro
+> * for exponential Runge-Kutta method use `expRK_butcher_tableau` macro
+#}
+{% macro pair_butcher_tableau(rk) -%}
+/**
+ * @brief Butcher tableau of explicit part of {{ rk.label }} method
+ * @tparam value_t type of coefficient (``double`` by default)
+ */
+template <typename value_t=double>
+struct butcher_{{ rk.id }}_erk : public {{ runge_kutta.butcher_parent(rk.is_embedded, rk.explicit.A|length) }}
+{
+  using base_t = {{ runge_kutta.butcher_parent(rk.is_embedded, rk.explicit.A|length) }};
+  static constexpr std::size_t N_stages = base_t::N_stages;
+  static constexpr std::size_t order    = {{ rk.explicit.order }};
+  static constexpr std::string_view id  = "{{ rk.id }}_erk";
+
+  using base_t::A;
+  using base_t::b;
+  using base_t::c;
+
+  butcher_{{ rk.id }}_erk()
+  : base_t(
+    {{ '{{' }}
+    {%- for ai in rk.explicit.A %}
+      { {{ ai|join(", ") }} }{{ ",      " if not loop.last else "" }}
+    {%- endfor %}
+    {{ '}}' }}, // A
+    { {{ rk.explicit.b|join(", ") }} }, // b
+    {% if rk.is_embedded -%}{ {{ rk.explicit.b2|join(", ") }} }, // b2 {%- endif %}
+    { {{ rk.explicit.c|join(", ") }} }  // c
+  )
+  {}
+};
+
+/**
+ * @brief Butcher tableau of implicit part of {{ rk.label }} method
+ * @tparam value_t type of coefficient (``double`` by default)
+ */
+template <typename value_t=double>
+struct butcher_{{ rk.id }}_dirk : public {{ runge_kutta.butcher_parent(rk.is_embedded, rk.implicit.A|length) }}
+{
+  using base_t = {{ runge_kutta.butcher_parent(rk.is_embedded, rk.implicit.A|length) }};
+  static constexpr std::size_t N_stages = base_t::N_stages;
+  static constexpr std::size_t order    = {{ rk.implicit.order }};
+  static constexpr std::string_view id  = "{{ rk.id }}_dirk";
+
+  using base_t::A;
+  using base_t::b;
+  using base_t::c;
+
+  butcher_{{ rk.id }}_dirk()
+  : base_t(
+    {{ '{{' }}
+    {%- for ai in rk.implicit.A %}
+      { {{ ai|join(", ") }} }{{ ",      " if not loop.last else "" }}
+    {%- endfor %}
+    {{ '}}' }}, // A
+    { {{ rk.implicit.b|join(", ") }} }, // b
+    {% if rk.is_embedded -%}{ {{ rk.implicit.b2|join(", ") }} }, // b2 {%- endif %}
+    { {{ rk.implicit.c|join(", ") }} }  // c
+  )
+  {}
+};
+{% endmacro %}{# end macro pair_butcher_tableau(rk) #}
+
+{# macro additive_runge_kutta ---------------------------------------
+
+- `rk`: pair of Butcher tableaus of an additive Runge-Kutta method to display as a C++ lambda-function
+
+Helper macro to display documentation and lambda-function of an additive Runge-Kutta method form its Butcher tableaus
+#}
+{% macro additive_runge_kutta(rk) -%}
+/**
+ * @brief {{ rk.label }} method
+ *
+ * @tparam value_t          type of coefficient (``double``by default)
+ * @tparam linear_algebra_t type that provides linear algebra if it is undefined for state_t (``void`` by default)
+ * @tparam Args optional    arguments to build linear_algebra_t object
+ *
+ * This method is based on the following pair of Butcher tableaus, with explicit part:
+ *
+ * \f[
+ *  \begin{array}{c|{%- for ci in rk.explicit.butcher.c -%}c{%- endfor -%}}
+      {%- for ai in rk.explicit.butcher.A %}
+ *      {{ rk.explicit.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
+ {%- endfor %}
+ *    \hline
+ *      & {{ rk.explicit.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *    \hline
+ *      & {{ rk.explicit.butcher.b2|join(' & ') }}
+{%- endif %}
+ *  \end{array}
+ * \f]
+ *
+ * and implicit part:
+ *
+ * \f[
+ *  \begin{array}{c|{%- for ci in rk.implicit.butcher.c -%}c{%- endfor -%}}
+      {%- for ai in rk.implicit.butcher.A %}
+ *      {{ rk.implicit.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
+ {%- endfor %}
+ *    \hline
+ *      & {{ rk.implicit.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *    \hline
+ *      & {{ rk.implicit.butcher.b2|join(' & ') }}
+{%- endif %}
+ *  \end{array}
+ * \f]
+ *
+ * + **stages:** {{ rk.explicit.A|length }}
+ * + **order:** {{ rk.order }}
+ * + **bibliography:** [{{ rk.bib.bib }}]({{ rk.bib.url }})
+ */
+template <typename value_t, typename linear_algebra_t = void, typename... Args>
+constexpr auto {{ rk.id }}_t = []( Args... args )
+{
+    return ponio::runge_kutta::additive_runge_kutta::make_ark<
+      butcher_{{ rk.id }}_dirk<value_t>,
+      butcher_{{ rk.id }}_erk<value_t>,
+      linear_algebra_t
+    >( args... );
+};
+
+template <typename linear_algebra_t=void, typename ... Args>
+auto
+{{ rk.id }} ( Args ... args )
+{
+    return ponio::runge_kutta::additive_runge_kutta::make_ark<
+      butcher_{{ rk.id }}_dirk<double>,
+      butcher_{{ rk.id }}_erk<double>,
+      linear_algebra_t
+    >( args... );
+}
+{% endmacro %}{# end macro additive_runge_kutta #}
+
+// clang-format on

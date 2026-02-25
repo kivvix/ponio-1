@@ -17,6 +17,7 @@ The ponio library provides multiple algorithms to solve ODE which must be specif
    algorithm/list_alg_dp
    algorithm/list_alg_lrk
    algorithm/list_alg_exprk
+   algorithm/list_alg_ark
    algorithm/list_alg_stab_rk
    algorithm/splitting
    algorithm/list_alg_pirock

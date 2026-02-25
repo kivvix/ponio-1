@@ -576,7 +576,7 @@ if __name__ == '__main__':
             )
 
         # sublists
-        for tpl in ("erk", "dirk", "lrk", "dp", "exprk"):
+        for tpl in ("erk", "dirk", "lrk", "dp", "exprk", "ark"):
             template_doc = env.get_template(f"tpl_doc_{tpl}.rst")
 
             with open(f"{args.doc_output}/list_alg_{tpl}.rst", 'w') as file:

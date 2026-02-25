@@ -68,7 +68,6 @@ Helper macro to display documentation and using of explicit Runge-Kutta method f
 /**
  * @brief {{ rk.label }} method
  * @tparam value_t type of coefficient (``double`` by default)
- *
  * @details see more on [ponio](https://hpc-maths.github.io/ponio/#{{ rk.id }})
  *
  * This method is based on the following Butcher tableau:
@@ -110,11 +109,8 @@ Helper macro to display documentation and using of Lawson-Runge-Kutta method fro
 {% macro lawson_runge_kutta(rk) -%}
 /**
  * @brief Lawson {{ rk.label }} method
- *
  * @tparam value_t type of coefficient (``double`` by default)
- *
  * @param exp_ exponential function for the Lawson method
- *
  * @details see more on [ponio](https://hpc-maths.github.io/ponio/#{{ rk.id }})
  *
  * + **stages:** {{ rk.A|length }}

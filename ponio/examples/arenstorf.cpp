@@ -100,14 +100,32 @@ main( int, char** )
     filename = ( std::filesystem::path( dirname ) / "arenstorf_rk118.dat" ).string();
     ponio::solve( arenstorf_pb, ponio::runge_kutta::rk_118(), yini, { 0., tf }, dt, ponio::observer::file_observer( filename ) );
 
+    double abs_tol = 1e-6;
+    double rel_tol = 1e-3;
+
     filename = ( std::filesystem::path( dirname ) / "arenstorf_rk546m.dat" ).string();
-    ponio::solve( arenstorf_pb, ponio::runge_kutta::rk54_6m( 1e-5 ), yini, { 0., tf }, dt, ponio::observer::file_observer( filename ) );
+    ponio::solve( arenstorf_pb,
+        ponio::runge_kutta::rk54_6m().abs_tol( abs_tol ).rel_tol( rel_tol ),
+        yini,
+        { 0., tf },
+        dt,
+        ponio::observer::file_observer( filename ) );
 
     filename = ( std::filesystem::path( dirname ) / "arenstorf_rk547m.dat" ).string();
-    ponio::solve( arenstorf_pb, ponio::runge_kutta::rk54_7m( 1e-5 ), yini, { 0., tf }, dt, ponio::observer::file_observer( filename ) );
+    ponio::solve( arenstorf_pb,
+        ponio::runge_kutta::rk54_7m().abs_tol( abs_tol ).rel_tol( rel_tol ),
+        yini,
+        { 0., tf },
+        dt,
+        ponio::observer::file_observer( filename ) );
 
     filename = ( std::filesystem::path( dirname ) / "arenstorf_rk547s.dat" ).string();
-    ponio::solve( arenstorf_pb, ponio::runge_kutta::rk54_7s( 1e-5 ), yini, { 0., tf }, dt, ponio::observer::file_observer( filename ) );
+    ponio::solve( arenstorf_pb,
+        ponio::runge_kutta::rk54_7s().abs_tol( abs_tol ).rel_tol( rel_tol ),
+        yini,
+        { 0., tf },
+        dt,
+        ponio::observer::file_observer( filename ) );
 
     // adaptive Strang method with Lipschitz estimate
     using namespace std::placeholders;
@@ -122,8 +140,8 @@ main( int, char** )
 
     auto arenstorf_splitting_pb = ponio::make_problem( phi_1, phi_2 );
 
-    auto adaptive_strang = ponio::splitting::make_adaptive_strang_tuple( 0.05,
-        1e-5,
+    auto adaptive_strang = ponio::splitting::make_adaptive_strang_tuple( 0.005,
+        abs_tol,
         std::make_pair( ponio::runge_kutta::rk_44(), 0.5 * dt ),
         std::make_pair( ponio::runge_kutta::rk_44(), 0.5 * dt ) );
 

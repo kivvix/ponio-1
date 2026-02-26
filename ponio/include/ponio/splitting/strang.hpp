@@ -321,12 +321,12 @@ namespace ponio::splitting::strang
             _call_inc( f, tn, u_n, dt, 0., u_np1 );
             _call_inc( f, tn, u_n_shift, dt, _info.delta, u_np1_shift );
 
-            _info.error = ::ponio::detail::error_estimate( un, u_np1, u_np1_shift, info().absolute_tolerance, info().relative_tolerance );
+            _info.error = ::ponio::detail::error_estimate( un, u_np1, u_np1_shift, info().tolerance, static_cast<value_t>( 1.0 ) );
 
-            value_t new_dt = 0.9 * std::sqrt( _info.tolerance / _info.error ) * dt;
+            value_t new_dt = 0.9 * std::sqrt( info().tolerance / _info.error ) * dt;
             new_dt         = std::min( std::max( 0.2 * dt, new_dt ), 5. * dt );
 
-            _info.success = _info.error < _info.tolerance;
+            _info.success = _info.error < static_cast<value_t>( 1.0 );
 
             if ( !_info.success )
             {
@@ -523,18 +523,18 @@ namespace ponio::splitting::strang
      * @tparam value_t      type of coefficients
      * @tparam Algorithms_t variadic list of types of algorithms
      * @param delta     shift argument
-     * @param tolerance tolerance for adaptive time step algorithm
+     * @param tol       tolerance for adaptive time step algorithm
      * @param args      variadic list of pairs of algorithm and time step
      * @return a @ref ponio::splitting::detail::splitting_tuple object build from the tuple of methods
      */
     template <typename value_t, typename... Algorithms_t>
     auto
-    make_adaptive_strang_tuple( value_t delta, value_t tolerance, std::pair<Algorithms_t, value_t>&&... args )
+    make_adaptive_strang_tuple( value_t delta, value_t tol, std::pair<Algorithms_t, value_t>&&... args )
     {
         return detail::splitting_tuple<adaptive_strang, value_t, std::tuple<value_t, value_t>, Algorithms_t...>(
             std::forward_as_tuple( ( args.first )... ),
             { args.second... },
-            std::make_tuple( delta, tolerance ) );
+            std::make_tuple( delta, tol ) );
     }
 
 } // namespace ponio::splitting::strang

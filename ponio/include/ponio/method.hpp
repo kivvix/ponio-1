@@ -402,7 +402,8 @@ namespace ponio
                 info().relative_tolerance );
             // std::cout << "alg.info().error = " << alg.info().error << std::endl;
 
-            value_t new_dt = 0.9 * std::pow( alg.info().tolerance / alg.info().error, 1. / static_cast<value_t>( Algorithm_t::order ) ) * dt;
+            value_t new_dt = 0.9 * std::pow( static_cast<value_t>( 1.0 ) / alg.info().error, 1. / static_cast<value_t>( Algorithm_t::order ) )
+                           * dt;
             new_dt = std::min( std::max( 0.2 * dt, new_dt ), 5. * dt );
 
             if ( alg.info().error > static_cast<value_t>( 1.0 ) )

@@ -182,8 +182,8 @@ namespace ponio::runge_kutta::additive_runge_kutta
         template <typename problem_t, typename state_t, typename array_kj_t>
         void
         stage( Stage<N_stages>,
-            problem_t& pb,
-            value_t tn,
+            problem_t&,
+            value_t,
             state_t& un,
             array_kj_t const& K_ex_j,
             array_kj_t const& K_im_j,
@@ -203,8 +203,8 @@ namespace ponio::runge_kutta::additive_runge_kutta
             requires std::same_as<tab_t, tableau_pair_t> && is_embedded
         void
         stage( Stage<N_stages + 1>,
-            problem_t& pb,
-            value_t tn,
+            problem_t&,
+            value_t,
             state_t& un,
             array_kj_t const& K_ex_j,
             array_kj_t const& K_im_j,

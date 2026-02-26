@@ -31,7 +31,7 @@ main()
     double const y_0 = 2.;
 
     ponio::time_span<double> t_span = { 0., 4.0 };
-    double dt                       = 0.05;
+    double dt                       = 0.025;
 
     { // explicit Runge-Kutta method
         auto f = [=]( double t, double y, double& dy )
@@ -215,20 +215,20 @@ main()
     }
 
     { // additive Runge-Kutta
-        auto f1 = [=]( double t, double y, double& dy )
+        auto f_e = [=]( double t, double y, double& dy )
         {
             dy = k * std::cos( t );
         };
-        auto f2 = [=]( double t, double y, double& dy )
+        auto f_i = [=]( double t, double y, double& dy )
         {
             dy = -k * y;
         };
-        auto df2 = [=]( double t, double y )
+        auto df_i = [=]( double t, double y )
         {
             return -k;
         };
 
-        auto pb = ponio::make_imex_jacobian_problem( f1, f2, df2 );
+        auto pb = ponio::make_imex_jacobian_problem( f_e, f_i, df_i );
 
         ponio::solve( pb, ponio::runge_kutta::imexrk23se(), y_0, t_span, dt, "ch_ark.txt"_fobs );
     }

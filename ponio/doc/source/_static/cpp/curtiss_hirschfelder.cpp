@@ -31,7 +31,7 @@ main()
     double const y_0 = 2.;
 
     ponio::time_span<double> t_span = { 0., 4.0 };
-    double dt                       = 0.025;
+    double dt                       = 0.05;
 
     { // explicit Runge-Kutta method
         auto f = [=]( double t, double y, double& dy )

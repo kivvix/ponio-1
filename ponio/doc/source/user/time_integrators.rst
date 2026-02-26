@@ -87,7 +87,7 @@ And next call the :cpp:func:`ponio::solve` function with
 Embedded methods
 ~~~~~~~~~~~~~~~~
 
-Some Butcher tableaus provide a second :math:`b` line:
+Some Butcher tableaus provide an extra :math:`b` line:
 
 .. math::
 
@@ -295,6 +295,65 @@ And next call the :cpp:func:`ponio::solve` function with
   :language: cpp
   :lines: 95
   :lineno-start: 95
+  :linenos:
+
+
+Additive Runge-Kutta methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An additive Runge-Kutta method is defined in ponio by its pair of Butcher tableaus
+
+.. math::
+
+   \begin{array}{c|c}
+      c & A \\
+      \hline
+        & b^\top
+   \end{array}
+   \quad
+   \begin{array}{c|c}
+      \tilde{c} & \tilde{A} \\
+      \hline
+        & \tilde{b}^\top
+   \end{array}
+
+which is stored as a JSON file in ``database`` folder, and where :math:`(A, b, c)` is an explicit Runge-Kutta method and :math:`(\tilde{A}, \tilde{b}, \tilde{c})` is a diagonal implicit Runge-Kutta method.
+
+Additive Runge-Kutta methods are useful to solve a problem like
+
+.. math::
+
+   \dot{u} = f_e(t, u) + f_i(t,u)
+
+The method, with the previous pair of Butcher tableaus, reads as
+
+.. math::
+
+   \begin{aligned}
+      u^{(i)} &= u^n + \Delta t \sum_j a_{ij} k_j + \Delta t \sum_\ell \tilde{a}_{i\ell} \tilde{k}_\ell, \quad i = 1, \dots, s \\
+      k_i         &= f_e(t^n + c_i\Delta t, u^{(i)}) \\
+      \tilde{k}_i &= f_i(t^n + \tilde{c}_i\Delta t, u^{(i)}) \\
+      u^{n+1} &= u^n + \Delta t \sum_i b_i k_i  + \Delta t \sum_j \tilde{b}_j k_j
+   \end{aligned}
+
+.. seealso::
+
+   See the :doc:`list of additive Runge-Kutta methods <../api/algorithm/list_alg_ark>` in ponio.
+
+For a problem split into a part which will be solved explicitly and a part which will be solved implicitly (you should provide the Jacobian matrix), and store them into a :cpp:class:`ponio::imex_problem`:
+
+.. literalinclude:: ../_static/cpp/curtiss_hirschfelder.cpp
+  :language: cpp
+  :lines: 218-231
+  :lineno-start: 218
+  :linenos:
+
+And next call the :cpp:func:`ponio::solve` function with
+
+.. literalinclude:: ../_static/cpp/curtiss_hirschfelder.cpp
+  :language: cpp
+  :lines: 233
+  :lineno-start: 233
   :linenos:
 
 ----

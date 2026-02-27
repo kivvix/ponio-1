@@ -21,9 +21,9 @@ Generate structure to store Butcher tableau for explicit and implicit method and
  * @tparam value_t type of coefficient (``double`` by default)
  */
 template <typename value_t=double>
-struct butcher_{{ rk.id }}_erk : public {{ runge_kutta.butcher_parent(rk.is_embedded, rk.explicit.A|length) }}
+struct butcher_{{ rk.id }}_erk : public {{ runge_kutta.butcher_parent(rk.explicit.is_embedded, rk.explicit.A|length) }}
 {
-  using base_t = {{ runge_kutta.butcher_parent(rk.is_embedded, rk.explicit.A|length) }};
+  using base_t = {{ runge_kutta.butcher_parent(rk.explicit.is_embedded, rk.explicit.A|length) }};
   static constexpr std::size_t N_stages = base_t::N_stages;
   static constexpr std::size_t order    = {{ rk.explicit.order }};
   static constexpr std::string_view id  = "{{ rk.id }}_erk";
@@ -40,7 +40,7 @@ struct butcher_{{ rk.id }}_erk : public {{ runge_kutta.butcher_parent(rk.is_embe
     {%- endfor %}
     {{ '}}' }}, // A
     { {{ rk.explicit.b|join(", ") }} }, // b
-    {% if rk.is_embedded -%}{ {{ rk.explicit.b2|join(", ") }} }, // b2 {%- endif %}
+    {% if rk.explicit.is_embedded -%}{ {{ rk.explicit.b2|join(", ") }} }, // b2 {%- endif %}
     { {{ rk.explicit.c|join(", ") }} }  // c
   )
   {}
@@ -51,9 +51,9 @@ struct butcher_{{ rk.id }}_erk : public {{ runge_kutta.butcher_parent(rk.is_embe
  * @tparam value_t type of coefficient (``double`` by default)
  */
 template <typename value_t=double>
-struct butcher_{{ rk.id }}_dirk : public {{ runge_kutta.butcher_parent(rk.is_embedded, rk.implicit.A|length) }}
+struct butcher_{{ rk.id }}_dirk : public {{ runge_kutta.butcher_parent(rk.implicit.is_embedded, rk.implicit.A|length) }}
 {
-  using base_t = {{ runge_kutta.butcher_parent(rk.is_embedded, rk.implicit.A|length) }};
+  using base_t = {{ runge_kutta.butcher_parent(rk.implicit.is_embedded, rk.implicit.A|length) }};
   static constexpr std::size_t N_stages = base_t::N_stages;
   static constexpr std::size_t order    = {{ rk.implicit.order }};
   static constexpr std::string_view id  = "{{ rk.id }}_dirk";
@@ -70,7 +70,7 @@ struct butcher_{{ rk.id }}_dirk : public {{ runge_kutta.butcher_parent(rk.is_emb
     {%- endfor %}
     {{ '}}' }}, // A
     { {{ rk.implicit.b|join(", ") }} }, // b
-    {% if rk.is_embedded -%}{ {{ rk.implicit.b2|join(", ") }} }, // b2 {%- endif %}
+    {% if rk.implicit.is_embedded -%}{ {{ rk.implicit.b2|join(", ") }} }, // b2 {%- endif %}
     { {{ rk.implicit.c|join(", ") }} }  // c
   )
   {}

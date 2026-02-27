@@ -66,6 +66,8 @@ class butcher_tableau:
             (" ", "_"),
             ("(", ""),
             (")", ""),
+            ("[", ""),
+            ("]", ""),
             (",", ""),
             ("-", ""),
             ("/", ""),
@@ -169,6 +171,7 @@ class pair_butcher_tableau:
             label=f"{label}-ex", **explicit, tag="eRK")
         self.implicit = butcher_tableau(
             label=f"{label}-im", **implicit, tag="diRK")
+        self.is_embedded = self.explicit.b2 is not None and self.implicit.b2 is not None
         self.tag = tag
         self.doi = doi
 
@@ -189,6 +192,8 @@ class pair_butcher_tableau:
             (" ", "_"),
             ("(", ""),
             (")", ""),
+            ("[", ""),
+            ("]", ""),
             (",", ""),
             ("-", ""),
             ("/", ""),
@@ -202,6 +207,8 @@ class pair_butcher_tableau:
         yield 'id', self.id
         yield 'explicit', dict(self.explicit)
         yield 'implicit', dict(self.implicit)
+
+        yield 'is_embedded', self.is_embedded
 
         if self.doi is not None:
             yield 'bib', doi_bib(self.doi)

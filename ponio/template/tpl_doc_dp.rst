@@ -14,7 +14,7 @@ Diagonal implicit methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {% for rk in list_dirk %}{% if rk.b2 is defined %}
-.. doxygenfunction:: ponio::runge_kutta::{{ rk.id }}_t
+.. doxygenvariable:: ponio::runge_kutta::{{ rk.id }}_t
   :project: ponio
 
 {% endif %}{% endfor %}

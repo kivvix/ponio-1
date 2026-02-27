@@ -145,7 +145,7 @@ class butcher_tableau:
                 ],
                 'c': list(map(sp.latex, self.c.T.tolist()[0]))
             } | {
-                b: getattr(self, b).T.tolist()[0] for b in ["b", "b2"] if getattr(self, b) is not None
+                b: list(map(sp.latex, getattr(self, b).T.tolist()[0])) for b in ["b", "b2"] if getattr(self, b) is not None
             }
 
         if self.doi is not None:

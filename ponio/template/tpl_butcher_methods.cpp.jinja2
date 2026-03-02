@@ -106,6 +106,13 @@ using exprk_tuple = std::tuple< {{ list_exprk | sformat("{}_t<value_t, linear_t>
 
 {% endfor %}
 
+/**
+ * @brief Type of tuple that contains all aRK methods of ponio
+*/
+template <typename value_t, typename linear_algebra_t=void, typename ... Args>
+using ark_tuple = std::tuple< {{ list_ark | sformat("decltype({}_t<value_t, linear_algebra_t, Args...>)", attribute="id") | join(", ") }} >;
+
+
 // NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved, modernize-use-std-numbers)
 
     // clang-format on

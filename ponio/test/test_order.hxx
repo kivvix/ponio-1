@@ -19,6 +19,7 @@ enum struct class_method
     diagonal_implicit_method,
     exponential_method,
     additive_method,
+    RD_method,
     RDA_method,
     splitting_method
 };
@@ -54,13 +55,24 @@ struct test_order
         }
         else if constexpr ( type == class_method::additive_method )
         {
+            using ark_t = decltype( std::declval<rk_t>()() );
+            // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
+            INFO( "test order of ", ark_t::id );
+            WARN( additive_method::check_order( ark_t(), 0.5 ) >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+            WARN( additive_method::check_order( ark_t(), 1. / 3. ) >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+            WARN( additive_method::check_order( ark_t(), 2. / 3. ) >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+            WARN( additive_method::check_order( ark_t(), 1. ) >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+            WARN( additive_method::check_order( ark_t(), 0. ) >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+        }
+        else if constexpr ( type == class_method::RD_method )
+        {
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
             INFO( "test order of ", rk_t::id );
-            WARN( additive_method::check_order( rk_t(), 0.5 ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 1. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 2. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 1. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 0. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            WARN( RD_method::check_order( rk_t(), 0.5 ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            WARN( RD_method::check_order( rk_t(), 1. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            WARN( RD_method::check_order( rk_t(), 2. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            WARN( RD_method::check_order( rk_t(), 1. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            WARN( RD_method::check_order( rk_t(), 0. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
         }
         else if constexpr ( type == class_method::RDA_method )
         {
@@ -146,7 +158,7 @@ TEST_CASE( "order::pirock" )
     >;
     // clang-format on
 
-    test_order<class_method::additive_method>::on<pirock_methods>();
+    test_order<class_method::RD_method>::on<pirock_methods>();
 }
 
 TEST_CASE( "order::pirock_RDA" )
@@ -225,6 +237,11 @@ TEST_CASE( "order::splitting::_split_solve" )
           == doctest::Approx( std::tuple_element_t<J, algos_t>::order ).epsilon( 0.125 ) );
     WARN( splitting_method::check_order_split_solve<K>( lie_meth )
           == doctest::Approx( std::tuple_element_t<K, algos_t>::order ).epsilon( 0.125 ) );
+}
+
+TEST_CASE( "order::additive_runge_kutta " )
+{
+    test_order<class_method::additive_method>::on<ponio::runge_kutta::ark_tuple<double>>();
 }
 
 // TEST_CASE( "order::lawson_runge_kutta" )

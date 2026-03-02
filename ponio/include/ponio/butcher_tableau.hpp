@@ -167,7 +167,7 @@ namespace ponio::runge_kutta::butcher
                                          requires is_explicit<tableau_ex_t>;
                                      };
 
-    template <typename _tableau_im_t, typename _tableau_ex_t>
+    template <typename _tableau_im_t, typename _tableau_ex_t, std::size_t _order, detail::string_constexpr _id>
     // requires is_compatible_tableaus<_tableau_im_t, _tableau_ex_t>
     struct pair_butcher_tableau
     {
@@ -176,6 +176,8 @@ namespace ponio::runge_kutta::butcher
 
         static constexpr std::size_t N_stages    = tableau_im_t::N_stages;
         static constexpr bool is_embedded        = is_embedded_tableau<tableau_im_t> && is_embedded_tableau<tableau_ex_t>;
+        static constexpr std::size_t order       = _order;
+        static constexpr std::string_view id     = _id.value;
         static constexpr bool is_imex_method     = true;
         static constexpr std::size_t N_operators = 2;
 

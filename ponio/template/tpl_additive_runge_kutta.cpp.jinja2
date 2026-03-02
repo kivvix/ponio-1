@@ -131,6 +131,8 @@ constexpr auto {{ rk.id }}_t = []( Args... args )
     return ponio::runge_kutta::additive_runge_kutta::make_ark<
       butcher_{{ rk.id }}_dirk<value_t>,
       butcher_{{ rk.id }}_erk<value_t>,
+      {{ rk.order }},
+      "{{ rk.id }}",
       linear_algebra_t
     >( args... );
 };
@@ -142,6 +144,8 @@ auto
     return ponio::runge_kutta::additive_runge_kutta::make_ark<
       butcher_{{ rk.id }}_dirk<double>,
       butcher_{{ rk.id }}_erk<double>,
+      {{ rk.order }},
+      "{{ rk.id }}",
       linear_algebra_t
     >( args... );
 }

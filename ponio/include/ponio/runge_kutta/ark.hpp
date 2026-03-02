@@ -35,7 +35,7 @@ namespace ponio::runge_kutta::additive_runge_kutta
         static constexpr bool is_imex_method      = tableau_pair_t::is_imex_method;
         static constexpr std::size_t order        = tableau_pair_t::order;
         static constexpr std::size_t N_operators  = tableau_pair_t::N_operators;
-        static constexpr std::string_view id      = detail::join_id_v<tableau_im_t, detail::separator<>, tableau_ex_t>;
+        static constexpr std::string_view id      = tableau_pair_t::id;
         static constexpr bool void_linear_algebra = std::is_void_v<lin_alg_t>;
         using linear_algebra_t                    = typename std::conditional_t<void_linear_algebra,
             bool, // just a small valid type
@@ -301,11 +301,11 @@ namespace ponio::runge_kutta::additive_runge_kutta
         iteration_info<tableau_pair_t> _info;
     };
 
-    template <typename tableau_im_t, typename tableau_ex_t, typename lin_alg_t, typename... args_t>
+    template <typename tableau_im_t, typename tableau_ex_t, std::size_t order, detail::string_constexpr id, typename lin_alg_t, typename... args_t>
     auto
     make_ark( args_t... args )
     {
-        return additive_runge_kutta<butcher::pair_butcher_tableau<tableau_im_t, tableau_ex_t>, lin_alg_t>( args... );
+        return additive_runge_kutta<butcher::pair_butcher_tableau<tableau_im_t, tableau_ex_t, order, id>, lin_alg_t>( args... );
     }
 
 } // namespace ponio::runge_kutta::additive_runge_kutta

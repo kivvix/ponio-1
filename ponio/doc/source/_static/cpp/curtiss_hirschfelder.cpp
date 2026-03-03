@@ -230,6 +230,6 @@ main()
 
         auto pb = ponio::make_imex_jacobian_problem( f_e, f_i, df_i );
 
-        ponio::solve( pb, ponio::runge_kutta::imexrk23se(), y_0, t_span, dt, "ch_ark.txt"_fobs );
+        ponio::solve( pb, ponio::runge_kutta::imex_rk36_spi2(), y_0, t_span, dt, "ch_ark.txt"_fobs );
     }
 }

@@ -99,7 +99,7 @@ Helper macro to display documentation and lambda-function of an additive Runge-K
  *      {{ rk.explicit.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
  {%- endfor %}
  *    \hline
- *      & {{ rk.explicit.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *      & {{ rk.explicit.butcher.b|join(' & ') }} {% if 'b2' in rk.explicit.is_embedded %} \\
  *    \hline
  *      & {{ rk.explicit.butcher.b2|join(' & ') }}
 {%- endif %}
@@ -114,7 +114,7 @@ Helper macro to display documentation and lambda-function of an additive Runge-K
  *      {{ rk.implicit.butcher.c[loop.index0] }} & {{ ai|join(' & ') }} \\
  {%- endfor %}
  *    \hline
- *      & {{ rk.implicit.butcher.b|join(' & ') }} {% if 'b2' in rk %} \\
+ *      & {{ rk.implicit.butcher.b|join(' & ') }} {% if 'b2' in rk.implicit.is_embedded %} \\
  *    \hline
  *      & {{ rk.implicit.butcher.b2|join(' & ') }}
 {%- endif %}

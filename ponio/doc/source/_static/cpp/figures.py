@@ -209,7 +209,7 @@ def ch_demos_fig():
         'RK(3,4)': 'dirk',
         'LRK(3,3)': 'lrk',
         'expRK(2,2)': 'exprk',
-        r'IMEX-RK36 $\mathcal{S}_{\pi/2}$': 'ark',
+        'IMEX-RK36 S_pi/2': 'ark',
         'RKC(5,2)': 'rkc',
         'ROCK2': 'rock2',
         'ROCK4': 'rock4',

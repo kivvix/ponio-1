@@ -452,7 +452,7 @@ def doi_bib_crossref(doi: str):
 
     return {
         'url': message['URL'],
-        'bib': f"{author}, \"{title.trim()}\", in: {publisher} ({pubdate})"
+        'bib': f"{author}, \"{title}\", in: {publisher} ({pubdate})"
     }
 
 

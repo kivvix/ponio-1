@@ -93,7 +93,7 @@ namespace explicit_method
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     short_time_check_order( Algorithm_t algo = Algorithm_t() )
     {
         using state_t = T;
@@ -127,13 +127,14 @@ namespace explicit_method
         f.close();
 #endif
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
 
-        return a;
+        return mayor_method( dts, errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     long_time_check_order( Algorithm_t& algo )
     {
         using state_t = std::valarray<T>;
@@ -171,18 +172,19 @@ namespace explicit_method
             log_dts.push_back( std::log10( dt ) );
         }
 
-        auto [a, b] = mayor_method( log_dts, relative_errors );
+        // auto [a, b] = mayor_method( log_dts, relative_errors );
+        // return a;
 
-        return a;
+        return mayor_method( log_dts, relative_errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t() )
     {
         if constexpr ( ponio::runge_kutta::butcher::is_embedded<Algorithm_t> )
         {
-            return Algorithm_t::order;
+            return std::make_tuple( Algorithm_t::order, 0. );
         }
         else if constexpr ( Algorithm_t::order >= 8 || ponio::splitting::is_splitting_method<Algorithm_t> )
         {
@@ -227,7 +229,7 @@ namespace additive_method
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     short_time_check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         using state_t = T;
@@ -248,18 +250,24 @@ namespace additive_method
             dts.push_back( std::log( dt ) );
         }
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // if ( a < 0.95 * Algorithm_t::order )
+        // {
+        //     std::cerr << Algorithm_t::id << " " << a << " " << b << "(" << lambda << ")" << std::endl;
+        // }
 
-        return a;
+        // return a;
+
+        return mayor_method( dts, errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         if constexpr ( Algorithm_t::is_embedded )
         {
-            return Algorithm_t::order;
+            return std::make_tuple( Algorithm_t::order, 0. );
         }
         else
         {
@@ -300,7 +308,7 @@ namespace RD_method
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     short_time_check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         using state_t = T;
@@ -321,13 +329,14 @@ namespace RD_method
             dts.push_back( std::log( dt ) );
         }
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
 
-        return a;
+        return mayor_method( dts, errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         return short_time_check_order( algo, lambda );
@@ -370,7 +379,7 @@ namespace RDA_method
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     short_time_check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         using state_t = T;
@@ -391,13 +400,14 @@ namespace RDA_method
             dts.push_back( std::log( dt ) );
         }
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
 
-        return a;
+        return mayor_method( dts, errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
     {
         return short_time_check_order( algo, lambda );
@@ -523,20 +533,21 @@ namespace splitting_method
             log_dts.push_back( std::log10( dt ) );
         }
 
-        auto [a, b] = mayor_method( log_dts, relative_errors );
+        // auto [a, b] = mayor_method( log_dts, relative_errors );
+        // return a;
 
-        return a;
+        return mayor_method( log_dts, relative_errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t() )
     {
         return long_time_check_order( algo );
     }
 
     template <std::size_t I, typename splitting_tuple_t, typename T = double>
-    T
+    auto
     check_order_split_solve( splitting_tuple_t split_tuple = splitting_tuple_t() )
     {
         // multiple solve of problem : dy = y
@@ -573,9 +584,10 @@ namespace splitting_method
             dts.push_back( std::log( dt ) );
         }
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
 
-        return a;
+        return mayor_method( dts, errors );
     }
 
 } // splitting_method
@@ -607,7 +619,7 @@ namespace diagonal_implicit_method
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     short_time_check_order( Algorithm_t algo = Algorithm_t() )
     {
         using state_t = T;
@@ -628,18 +640,19 @@ namespace diagonal_implicit_method
             dts.push_back( std::log( dt ) );
         }
 
-        auto [a, b] = mayor_method( dts, errors );
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
 
-        return a;
+        return mayor_method( dts, errors );
     }
 
     template <typename Algorithm_t, typename T = double>
-    T
+    auto
     check_order( Algorithm_t algo = Algorithm_t() )
     {
         if constexpr ( ponio::runge_kutta::butcher::is_embedded<Algorithm_t> )
         {
-            return Algorithm_t::order;
+            return std::make_tuple( Algorithm_t::order, 0. );
         }
         else
         {
@@ -648,3 +661,69 @@ namespace diagonal_implicit_method
     }
 
 } // namespace diagonal_implicit_method
+
+namespace exponential_method
+{
+
+    template <typename Algorithm_t, typename T = double>
+    auto
+    solve_exp( Algorithm_t& algo, T dt, T Tf, T lambda )
+    {
+        using state_t = T;
+
+        auto pb = ponio::make_lawson_problem( lambda,
+            [=]( T, state_t y, state_t& dy )
+            {
+                dy = ( 1. - lambda ) * y;
+            } );
+
+        state_t y0                 = 1.0;
+        ponio::time_span<T> t_span = { 0., Tf };
+
+        auto obs = []( T, state_t, T ) {};
+        return ::ponio::solve( pb, algo, y0, t_span, dt, obs );
+    }
+
+    template <typename Algorithm_t, typename T = double>
+    auto
+    short_time_check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
+    {
+        using state_t = T;
+
+        std::vector<T> errors;
+        std::vector<T> dts;
+
+        T Tf = 1.0;
+
+        state_t u_exa = std::exp( Tf );
+
+        for ( auto n_iter : { 50, 25, 20, 15, 10, 5, 2, 1 } )
+        {
+            T dt          = Tf / n_iter;
+            state_t u_sol = solve_exp( algo, dt, Tf, lambda );
+            auto e        = error( u_exa, u_sol );
+            errors.push_back( std::log( e ) );
+            dts.push_back( std::log( dt ) );
+        }
+
+        // auto [a, b] = mayor_method( dts, errors );
+        // return a;
+
+        return mayor_method( dts, errors );
+    }
+
+    template <typename Algorithm_t, typename T = double>
+    auto
+    check_order( Algorithm_t algo = Algorithm_t(), T lambda = 0.33 )
+    {
+        if constexpr ( Algorithm_t::is_embedded )
+        {
+            return std::make_tuple( Algorithm_t::order, 0. );
+        }
+        else
+        {
+            return short_time_check_order( algo, lambda );
+        }
+    }
+
+} // namespace exponential_method

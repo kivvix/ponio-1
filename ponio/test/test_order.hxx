@@ -33,7 +33,11 @@ struct test_order
     {
         if constexpr ( type == class_method::explicit_method )
         {
-            auto [computed_order, computed_cst] = explicit_method::check_order( rk_t() );
+            double computed_order;
+            double computed_cst;
+
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = explicit_method::check_order( rk_t() );
 
             INFO( "test order of ", rk_t::id );
             INFO( "theoretical order: ", rk_t::order );
@@ -54,7 +58,11 @@ struct test_order
         {
             using dirk_t = decltype( std::declval<rk_t>()() );
 
-            auto [computed_order, computed_cst] = diagonal_implicit_method::check_order( dirk_t() );
+            double computed_order;
+            double computed_cst;
+
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = diagonal_implicit_method::check_order( dirk_t() );
 
             INFO( "test order of ", dirk_t::id );
             INFO( "theoretical order: ", dirk_t::order );
@@ -78,7 +86,11 @@ struct test_order
             // In exponential Runge-Kutta method when coefficient lambda is equal to 1 we get exact solution so we don't test lambda=1.
             for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0. } )
             {
-                auto [computed_order, computed_cst] = exponential_method::check_order( exprk_t( exp_t() ), lambda );
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = exponential_method::check_order( exprk_t( exp_t() ), lambda );
 
                 INFO( "test order of ", exprk_t::id );
                 INFO( "lambda: ", lambda );
@@ -106,7 +118,11 @@ struct test_order
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
             for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
             {
-                auto [computed_order, computed_cst] = additive_method::check_order( ark_t(), lambda );
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = additive_method::check_order( ark_t(), lambda );
 
                 INFO( "test order of ", ark_t::id );
                 INFO( "lambda: ", lambda );
@@ -129,7 +145,11 @@ struct test_order
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
             for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
             {
-                auto [computed_order, computed_cst] = RD_method::check_order( rk_t(), lambda );
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = RD_method::check_order( rk_t(), lambda );
 
                 INFO( "test order of ", rk_t::id );
                 INFO( "lambda: ", lambda );
@@ -152,7 +172,11 @@ struct test_order
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
             for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
             {
-                auto [computed_order, computed_cst] = RDA_method::check_order( rk_t(), lambda );
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = RDA_method::check_order( rk_t(), lambda );
 
                 INFO( "test order of ", rk_t::id );
                 INFO( "lambda: ", lambda );
@@ -172,7 +196,11 @@ struct test_order
         }
         else if constexpr ( type == class_method::splitting_method )
         {
-            auto [computed_order, computed_cst] = splitting_method::check_order( rk_t() );
+            double computed_order;
+            double computed_cst;
+
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = splitting_method::check_order( rk_t() );
 
             INFO( "test order of ", rk_t::id );
             INFO( "theoretical order: ", rk_t::order );
@@ -343,7 +371,11 @@ TEST_CASE( "order::splitting[even]" )
     // clang-format on
 
     // Lie splitting method
-    auto [lie_computed_order, lie_computed_cst] = splitting_method::check_order( lie_splitting );
+    double lie_computed_order;
+    double lie_computed_cst;
+
+    // use std::tie because of a bug in clang++-15
+    std::tie( lie_computed_order, lie_computed_cst ) = splitting_method::check_order( lie_splitting );
 
     INFO( "test order of ", lie_splitting.id );
     INFO( "theoretical order: ", lie_splitting.order );
@@ -361,7 +393,11 @@ TEST_CASE( "order::splitting[even]" )
     }
 
     // Strang splitting method
-    auto [strang_computed_order, strang_computed_cst] = splitting_method::check_order( strang_splitting );
+    double strang_computed_order;
+    double strang_computed_cst;
+
+    // use std::tie because of a bug in clang++-15
+    std::tie( strang_computed_order, strang_computed_cst ) = splitting_method::check_order( strang_splitting );
 
     INFO( "test order of ", strang_splitting.id );
     INFO( "theoretical order: ", strang_splitting.order );

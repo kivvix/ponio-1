@@ -319,7 +319,10 @@ TEST_CASE( "order::splitting[odd]" )
     // clang-format on
 
     // Lie splitting method
-    auto [lie_computed_order, lie_computed_cst] = splitting_method::check_order( lie_splitting );
+    double lie_computed_order;
+    double lie_computed_cst;
+    // use std::tie because of a bug in clang++-15
+    std::tie( lie_computed_order, lie_computed_cst ) = splitting_method::check_order( lie_splitting );
 
     INFO( "test order of ", lie_splitting.id );
     INFO( "theoretical order: ", lie_splitting.order );
@@ -337,7 +340,10 @@ TEST_CASE( "order::splitting[odd]" )
     }
 
     // Strang splitting method
-    auto [strang_computed_order, strang_computed_cst] = splitting_method::check_order( strang_splitting );
+    double strang_computed_order;
+    double strang_computed_cst;
+    // use std::tie because of a bug in clang++-15
+    std::tie( strang_computed_order, strang_computed_cst ) = splitting_method::check_order( strang_splitting );
 
     INFO( "test order of ", strang_splitting.id );
     INFO( "theoretical order: ", strang_splitting.order );
@@ -432,9 +438,17 @@ TEST_CASE( "order::splitting::_split_solve" )
     static constexpr std::size_t J = 1;
     static constexpr std::size_t K = 2;
 
-    auto [I_computed_order, I_computed_cst] = splitting_method::check_order_split_solve<I>( lie_meth );
-    auto [J_computed_order, J_computed_cst] = splitting_method::check_order_split_solve<J>( lie_meth );
-    auto [K_computed_order, K_computed_cst] = splitting_method::check_order_split_solve<K>( lie_meth );
+    double I_computed_order;
+    double I_computed_cst;
+    std::tie( I_computed_order, I_computed_cst ) = splitting_method::check_order_split_solve<I>( lie_meth );
+
+    double J_computed_order;
+    double J_computed_cst;
+    std::tie( J_computed_order, J_computed_cst ) = splitting_method::check_order_split_solve<J>( lie_meth );
+
+    double K_computed_order;
+    double K_computed_cst;
+    std::tie( K_computed_order, K_computed_cst ) = splitting_method::check_order_split_solve<K>( lie_meth );
 
     WARN( I_computed_order == doctest::Approx( std::tuple_element_t<I, algos_t>::order ).epsilon( 0.125 ) );
     WARN( J_computed_order == doctest::Approx( std::tuple_element_t<J, algos_t>::order ).epsilon( 0.125 ) );

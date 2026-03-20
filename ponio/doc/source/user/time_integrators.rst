@@ -203,7 +203,7 @@ In ponio, Lawson methods have the same name of the underlying explicit Runge-Kut
 
    See the :doc:`list of Lawson Runge-Kutta methods <../api/algorithm/list_alg_lrk>` in ponio.
 
-For a problem split into a linear and nonlinear part, we need to define linear part as a scalar or a matrix and the nonlinear part as a function, and store them into a :cpp:class:`ponio::laxson_problem`.
+For a problem split into a linear and nonlinear part, we need to define linear part as a scalar or a matrix and the nonlinear part as a function, and store them into a :cpp:class:`ponio::lawson_problem`.
 
 .. literalinclude:: ../_static/cpp/curtiss_hirschfelder_all/lrk.cxx
   :language: cpp

@@ -19,8 +19,6 @@ with stiff parameter :math:`k=50`, initial condition :math:`y(0) = y_0 = 2` and 
 .. literalinclude:: ../_static/cpp/curtiss_hirschfelder.cpp
   :language: cpp
   :lines: 30-34
-  :lineno-start: 30
-  :linenos:
 
 We will solve this problem with different kind of methods just to present how to use them.
 
@@ -76,7 +74,7 @@ For an explicit method, we can only define a the function :math:`f` as a lambda 
 
 And next call the :cpp:func:`ponio::solve` function with
 
-.. literalinclude:: ../_static/cpp/curtiss_hirschfelder_all/erk.cpp
+.. literalinclude:: ../_static/cpp/curtiss_hirschfelder_all/erk.cxx
   :language: cpp
   :lines: 6
 
@@ -822,11 +820,6 @@ And next call the :cpp:func:`ponio::solve` function with
 
 
 ----
-
-.. seealso::
-
-  The full example with all methods can be found in :download:`curtiss_hirschfelder.cpp <../_static/cpp/curtiss_hirschfelder.cpp>`.
-
 
 Bibliography
 ------------

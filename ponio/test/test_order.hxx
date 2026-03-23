@@ -19,11 +19,12 @@ enum struct class_method
     diagonal_implicit_method,
     exponential_method,
     additive_method,
+    RD_method,
     RDA_method,
     splitting_method
 };
 
-template <class_method type>
+template <class_method type, typename exp_t = void>
 struct test_order
 {
     template <typename rk_t>
@@ -32,47 +33,189 @@ struct test_order
     {
         if constexpr ( type == class_method::explicit_method )
         {
-            INFO( "test order of ", rk_t::id );
-            auto computed_order = explicit_method::check_order( rk_t() );
+            double computed_order;
+            double computed_cst;
 
-            CHECK( computed_order >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( computed_order == doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = explicit_method::check_order( rk_t() );
+
+            INFO( "test order of ", rk_t::id );
+            INFO( "theoretical order: ", rk_t::order );
+            INFO( "computed order   : ", computed_order );
+            INFO( "computed error constant: ", computed_cst );
+
+            if ( computed_cst > -8. ) // error is to close than computer error
+            {
+                CHECK( computed_order >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+                WARN( computed_order == doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            }
+            else
+            {
+                WARN( computed_order == doctest::Approx( rk_t::order ).epsilon( 2. ) );
+            }
         }
         else if constexpr ( type == class_method::diagonal_implicit_method )
         {
-            INFO( "not implemented test for DIRK method" );
-            WARN( diagonal_implicit_method::check_order( rk_t() ) == doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            using dirk_t = decltype( std::declval<rk_t>()() );
+
+            double computed_order;
+            double computed_cst;
+
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = diagonal_implicit_method::check_order( dirk_t() );
+
+            INFO( "test order of ", dirk_t::id );
+            INFO( "theoretical order: ", dirk_t::order );
+            INFO( "computed order   : ", computed_order );
+            INFO( "computed error constant: ", computed_cst );
+
+            if ( computed_cst > -8. ) // error is to close than computer error
+            {
+                CHECK( computed_order >= doctest::Approx( dirk_t::order ).epsilon( 0.05 ) );
+                WARN( computed_order == doctest::Approx( dirk_t::order ).epsilon( 0.05 ) );
+            }
+            else
+            {
+                WARN( computed_order == doctest::Approx( dirk_t::order ).epsilon( 2. ) );
+            }
         }
         else if constexpr ( type == class_method::exponential_method )
         {
-            INFO( "not implemented test for exponential method" );
-            WARN( false );
+            using exprk_t = decltype( std::declval<rk_t>()( exp_t() ) );
+
+            // In exponential Runge-Kutta method when coefficient lambda is equal to 1 we get exact solution so we don't test lambda=1.
+            for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0. } )
+            {
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = exponential_method::check_order( exprk_t( exp_t() ), lambda );
+
+                INFO( "test order of ", exprk_t::id );
+                INFO( "lambda: ", lambda );
+                INFO( "theoretical order: ", exprk_t::order );
+                INFO( "computed order   : ", computed_order );
+                INFO( "computed error constant: ", computed_cst );
+
+                if ( computed_cst > -8. ) // error is to close than computer error
+                {
+                    CHECK( computed_order >= doctest::Approx( exprk_t::order ).epsilon( 0.05 ) );
+                    WARN( computed_order == doctest::Approx( exprk_t::order ).epsilon( 0.05 ) );
+                }
+                else
+                {
+                    WARN( computed_order == doctest::Approx( exprk_t::order ).epsilon( 2. ) );
+                }
+            }
         }
         else if constexpr ( type == class_method::additive_method )
         {
+            using ark_t = decltype( std::declval<rk_t>()() );
+
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
-            INFO( "test order of ", rk_t::id );
-            WARN( additive_method::check_order( rk_t(), 0.5 ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 1. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 2. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 1. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( additive_method::check_order( rk_t(), 0. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+
+            // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
+            for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
+            {
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = additive_method::check_order( ark_t(), lambda );
+
+                INFO( "test order of ", ark_t::id );
+                INFO( "lambda: ", lambda );
+                INFO( "theoretical order: ", ark_t::order );
+                INFO( "computed order   : ", computed_order );
+                INFO( "computed error constant: ", computed_cst );
+
+                if ( computed_cst > -8. ) // error is to close than computer error
+                {
+                    WARN( computed_order >= doctest::Approx( ark_t::order ).epsilon( 0.05 ) );
+                }
+                else
+                {
+                    WARN( computed_order >= doctest::Approx( ark_t::order ).epsilon( 2. ) );
+                }
+            }
+        }
+        else if constexpr ( type == class_method::RD_method )
+        {
+            // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
+            for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
+            {
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = RD_method::check_order( rk_t(), lambda );
+
+                INFO( "test order of ", rk_t::id );
+                INFO( "lambda: ", lambda );
+                INFO( "theoretical order: ", rk_t::order );
+                INFO( "computed order   : ", computed_order );
+                INFO( "computed error constant: ", computed_cst );
+
+                if ( computed_cst > -8. ) // error is to close than computer error
+                {
+                    WARN( computed_order >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+                }
+                else
+                {
+                    WARN( computed_order >= doctest::Approx( rk_t::order ).epsilon( 2. ) );
+                }
+            }
         }
         else if constexpr ( type == class_method::RDA_method )
         {
             // In additive Runge-Kutta method, one of method could be higher order than other (so we don't test equality)
-            INFO( "test order of ", rk_t::id );
-            WARN( RDA_method::check_order( rk_t(), 1. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( RDA_method::check_order( rk_t(), 2. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( RDA_method::check_order( rk_t(), 1. / 3. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( RDA_method::check_order( rk_t(), 0.5 ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( RDA_method::check_order( rk_t(), 0.25 ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
-            WARN( RDA_method::check_order( rk_t(), 0. ) >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+            for ( auto lambda : { 0.5, 1. / 3., 2. / 3., 0., 1. } )
+            {
+                double computed_order;
+                double computed_cst;
+
+                // use std::tie because of a bug in clang++-15
+                std::tie( computed_order, computed_cst ) = RDA_method::check_order( rk_t(), lambda );
+
+                INFO( "test order of ", rk_t::id );
+                INFO( "lambda: ", lambda );
+                INFO( "theoretical order: ", rk_t::order );
+                INFO( "computed order   : ", computed_order );
+                INFO( "computed error constant: ", computed_cst );
+
+                if ( computed_cst > -8. ) // error is to close than computer error
+                {
+                    WARN( computed_order >= doctest::Approx( rk_t::order ).epsilon( 0.05 ) );
+                }
+                else
+                {
+                    WARN( computed_order >= doctest::Approx( rk_t::order ).epsilon( 2. ) );
+                }
+            }
         }
         else if constexpr ( type == class_method::splitting_method )
         {
+            double computed_order;
+            double computed_cst;
+
+            // use std::tie because of a bug in clang++-15
+            std::tie( computed_order, computed_cst ) = splitting_method::check_order( rk_t() );
+
             INFO( "test order of ", rk_t::id );
-            WARN( splitting_method::check_order( rk_t() ) == doctest::Approx( rk_t::order ).epsilon( 0.125 ) );
+            INFO( "theoretical order: ", rk_t::order );
+            INFO( "computed order   : ", computed_order );
+            INFO( "computed error constant: ", computed_cst );
+
+            if ( computed_cst > -8. ) // error is to close than computer error
+            {
+                CHECK( computed_order >= doctest::Approx( rk_t::order ).epsilon( 0.125 ) );
+                WARN( computed_order == doctest::Approx( rk_t::order ).epsilon( 0.125 ) );
+            }
+            else
+            {
+                WARN( computed_order == doctest::Approx( rk_t::order ).epsilon( 2. ) );
+            }
         }
         else
         {
@@ -99,6 +242,11 @@ struct test_order
 TEST_CASE( "order::explict_runge_kutta" )
 {
     test_order<class_method::explicit_method>::on<ponio::runge_kutta::erk_tuple<double>>();
+}
+
+TEST_CASE( "order::diagonal_implicit_runge_kutta" )
+{
+    test_order<class_method::diagonal_implicit_method>::on<ponio::runge_kutta::dirk_tuple<double>>();
 }
 
 TEST_CASE( "order::chebychev_runge_kutta" )
@@ -137,7 +285,7 @@ TEST_CASE( "order::pirock" )
     >;
     // clang-format on
 
-    test_order<class_method::additive_method>::on<pirock_methods>();
+    test_order<class_method::RD_method>::on<pirock_methods>();
 }
 
 TEST_CASE( "order::pirock_RDA" )
@@ -170,8 +318,47 @@ TEST_CASE( "order::splitting[odd]" )
     );
     // clang-format on
 
-    WARN( splitting_method::check_order( lie_splitting ) == doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
-    WARN( splitting_method::check_order( strang_splitting ) == doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+    // Lie splitting method
+    double lie_computed_order;
+    double lie_computed_cst;
+    // use std::tie because of a bug in clang++-15
+    std::tie( lie_computed_order, lie_computed_cst ) = splitting_method::check_order( lie_splitting );
+
+    INFO( "test order of ", lie_splitting.id );
+    INFO( "theoretical order: ", lie_splitting.order );
+    INFO( "computed order   : ", lie_computed_order );
+    INFO( "computed error constant: ", lie_computed_cst );
+
+    if ( lie_computed_cst > -8. ) // error is to close than computer error
+    {
+        CHECK( lie_computed_order >= doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
+        WARN( lie_computed_order == doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
+    }
+    else
+    {
+        WARN( lie_computed_order == doctest::Approx( lie_splitting.order ).epsilon( 2. ) );
+    }
+
+    // Strang splitting method
+    double strang_computed_order;
+    double strang_computed_cst;
+    // use std::tie because of a bug in clang++-15
+    std::tie( strang_computed_order, strang_computed_cst ) = splitting_method::check_order( strang_splitting );
+
+    INFO( "test order of ", strang_splitting.id );
+    INFO( "theoretical order: ", strang_splitting.order );
+    INFO( "computed order   : ", strang_computed_order );
+    INFO( "computed error constant: ", strang_computed_cst );
+
+    if ( strang_computed_cst > -8. ) // error is to close than computer error
+    {
+        CHECK( strang_computed_order >= doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+        WARN( strang_computed_order == doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+    }
+    else
+    {
+        WARN( strang_computed_order == doctest::Approx( strang_splitting.order ).epsilon( 2. ) );
+    }
 }
 
 TEST_CASE( "order::splitting[even]" )
@@ -189,8 +376,49 @@ TEST_CASE( "order::splitting[even]" )
     );
     // clang-format on
 
-    WARN( splitting_method::check_order( lie_splitting ) == doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
-    WARN( splitting_method::check_order( strang_splitting ) == doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+    // Lie splitting method
+    double lie_computed_order;
+    double lie_computed_cst;
+
+    // use std::tie because of a bug in clang++-15
+    std::tie( lie_computed_order, lie_computed_cst ) = splitting_method::check_order( lie_splitting );
+
+    INFO( "test order of ", lie_splitting.id );
+    INFO( "theoretical order: ", lie_splitting.order );
+    INFO( "computed order   : ", lie_computed_order );
+    INFO( "computed error constant: ", lie_computed_cst );
+
+    if ( lie_computed_cst > -8. ) // error is to close than computer error
+    {
+        CHECK( lie_computed_order >= doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
+        WARN( lie_computed_order == doctest::Approx( lie_splitting.order ).epsilon( 0.125 ) );
+    }
+    else
+    {
+        WARN( lie_computed_order == doctest::Approx( lie_splitting.order ).epsilon( 2. ) );
+    }
+
+    // Strang splitting method
+    double strang_computed_order;
+    double strang_computed_cst;
+
+    // use std::tie because of a bug in clang++-15
+    std::tie( strang_computed_order, strang_computed_cst ) = splitting_method::check_order( strang_splitting );
+
+    INFO( "test order of ", strang_splitting.id );
+    INFO( "theoretical order: ", strang_splitting.order );
+    INFO( "computed order   : ", strang_computed_order );
+    INFO( "computed error constant: ", strang_computed_cst );
+
+    if ( strang_computed_cst > -8. ) // error is to close than computer error
+    {
+        CHECK( strang_computed_order >= doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+        WARN( strang_computed_order == doctest::Approx( strang_splitting.order ).epsilon( 0.125 ) );
+    }
+    else
+    {
+        WARN( strang_computed_order == doctest::Approx( strang_splitting.order ).epsilon( 2. ) );
+    }
 }
 
 TEST_CASE( "order::splitting::_split_solve" )
@@ -210,16 +438,34 @@ TEST_CASE( "order::splitting::_split_solve" )
     static constexpr std::size_t J = 1;
     static constexpr std::size_t K = 2;
 
-    WARN( splitting_method::check_order_split_solve<I>( lie_meth )
-          == doctest::Approx( std::tuple_element_t<I, algos_t>::order ).epsilon( 0.125 ) );
-    WARN( splitting_method::check_order_split_solve<J>( lie_meth )
-          == doctest::Approx( std::tuple_element_t<J, algos_t>::order ).epsilon( 0.125 ) );
-    WARN( splitting_method::check_order_split_solve<K>( lie_meth )
-          == doctest::Approx( std::tuple_element_t<K, algos_t>::order ).epsilon( 0.125 ) );
+    double I_computed_order;
+    double I_computed_cst;
+    std::tie( I_computed_order, I_computed_cst ) = splitting_method::check_order_split_solve<I>( lie_meth );
+
+    double J_computed_order;
+    double J_computed_cst;
+    std::tie( J_computed_order, J_computed_cst ) = splitting_method::check_order_split_solve<J>( lie_meth );
+
+    double K_computed_order;
+    double K_computed_cst;
+    std::tie( K_computed_order, K_computed_cst ) = splitting_method::check_order_split_solve<K>( lie_meth );
+
+    WARN( I_computed_order == doctest::Approx( std::tuple_element_t<I, algos_t>::order ).epsilon( 0.125 ) );
+    WARN( J_computed_order == doctest::Approx( std::tuple_element_t<J, algos_t>::order ).epsilon( 0.125 ) );
+    WARN( K_computed_order == doctest::Approx( std::tuple_element_t<K, algos_t>::order ).epsilon( 0.125 ) );
+}
+
+TEST_CASE( "order::additive_runge_kutta " )
+{
+    test_order<class_method::additive_method>::on<ponio::runge_kutta::ark_tuple<double>>();
 }
 
 // TEST_CASE( "order::lawson_runge_kutta" )
 // {
-//     auto exp = [](double x){ return std::exp(x); };
-//     test_order<class_method::exponential_method>::on<ponio::runge_kutta::lrk_tuple<double, decltype(exp)>>();
+//     auto exp = []( double x )
+//     {
+//         return std::exp( x );
+//     };
+//     using exp_t = decltype( exp );
+//     test_order<class_method::exponential_method, exp_t>::on<ponio::runge_kutta::lrk_tuple<double, exp_t>>();
 // }

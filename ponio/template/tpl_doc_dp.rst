@@ -14,7 +14,7 @@ Diagonal implicit methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {% for rk in list_dirk %}{% if rk.b2 is defined %}
-.. doxygenfunction:: ponio::runge_kutta::{{ rk.id }}_t
+.. doxygenvariable:: ponio::runge_kutta::{{ rk.id }}_t
   :project: ponio
 
 {% endif %}{% endfor %}
@@ -24,6 +24,15 @@ Lawson methods
 
 {% for rk in list_erk %}{% if rk.b2 is defined %}
 .. doxygenvariable:: ponio::runge_kutta::l{{ rk.id }}_t
+  :project: ponio
+
+{% endif %}{% endfor %}
+
+Additive Runge-Kutta methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+{% for rk in list_ark %}{% if rk.explicit.b2 is defined %}
+.. doxygenvariable:: ponio::runge_kutta::{{ rk.id }}_t
   :project: ponio
 
 {% endif %}{% endfor %}

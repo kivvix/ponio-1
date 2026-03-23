@@ -38,7 +38,7 @@ namespace ponio::linear_algebra
         static vector_type
         solver( matrix_type const& dfx, vector_type const& fx )
         {
-            return dfx.colPivHouseholderQr().solve( fx );
+            return dfx.householderQr().solve( fx );
         }
     };
 

@@ -230,9 +230,7 @@ namespace ponio
         std::size_t number_of_steps;                                /**< number of stages of method */
         details::tuple_of_number_of_eval_t<tuple_t> number_of_eval; /**< number of evaluation of function */
 
-        value_t tolerance;          /**< tolerance for the method (for adaptive time step method) */
-        value_t absolute_tolerance; /**< absolute tolerance for the method (for adaptive time step method) */
-        value_t relative_tolerance; /**< relative tolerance for the method (for adaptive time step method) */
+        value_t tolerance; /**< tolerance for the method (for adaptive time step method) */
 
         tuple_t* ptr_methods; /**< pointer to tuple of methods to access to iteration_info of each substep */
 
@@ -241,8 +239,6 @@ namespace ponio
             , error( static_cast<value_t>( 0 ) )
             , number_of_steps( splitting_t::N_steps )
             , tolerance( tol )
-            , absolute_tolerance( tol )
-            , relative_tolerance( tol )
             , ptr_methods( &methods )
         {
             reset_eval();

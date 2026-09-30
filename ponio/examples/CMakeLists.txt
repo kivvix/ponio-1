@@ -22,6 +22,10 @@ endif()
 
 if(BUILD_SAMURAI_EXAMPLES)
     list(APPEND examples_list ${examples_samurai})
+
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(PETSC REQUIRED PETSc)
+    include_directories(${PETSC_INCLUDE_DIRS})
     set(SAMURAI_WITH_PETSC ON)
     find_package(samurai CONFIG REQUIRED)
 endif()
@@ -44,7 +48,7 @@ foreach(example IN LISTS examples_list)
 
     if(${example} IN_LIST examples_samurai)
         message(STATUS "    - samurai")
-        target_link_libraries(${example} PUBLIC samurai::samurai)
+        target_link_libraries(${example} PUBLIC samurai::samurai ${PETSC_LINK_LIBRARIES})
     endif()
 
     target_link_libraries(${example} PUBLIC ponio)

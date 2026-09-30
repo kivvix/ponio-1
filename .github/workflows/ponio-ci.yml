@@ -203,11 +203,13 @@ jobs:
           which python
           python --version
           which cmake
+          echo PYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
+          echo DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
       - name: Build
         shell: micromamba-shell {0}
         run: |
           export Eigen3_DIR="${CONDA_PREFIX}/share/eigen3/cmake"
-          cmake . -Bbuild -DBUILD_ALL_EXAMPLES=ON -DPython_FIND_VIRTUALENV=ONLY
+          cmake . -Bbuild -DBUILD_ALL_EXAMPLES=ON -DPython_FIND_VIRTUALENV=ONLY -DPYTHON_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") -DPYTHON_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
       - name: Execute all examples
         shell: micromamba-shell {0}
         run: cmake --build build --target save_visu
